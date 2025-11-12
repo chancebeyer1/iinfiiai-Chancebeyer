@@ -1,12 +1,33 @@
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     const VAPI_API_KEY = Deno.env.get("VAPI_PRIVATE_KEY");
     
+    console.log('🔑 API Key exists:', !!VAPI_API_KEY);
+    console.log('🔑 API Key length:', VAPI_API_KEY?.length);
+    
     if (!VAPI_API_KEY) {
-      return Response.json(
-        { success: false, error: 'Vapi API key not configured. Please add VAPI_PRIVATE_KEY to secrets.' },
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Vapi API key not configured. Please add VAPI_PRIVATE_KEY to secrets.'
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     // Parse request body
@@ -16,13 +37,29 @@ Deno.serve(async (req) => {
     const { phoneNumber, assistantId, scenarioName } = body;
 
     if (!phoneNumber || !assistantId) {
-      return Response.json(
-        { success: false, error: 'Phone number and assistant ID are required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Phone number and assistant ID are required'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     console.log(`📞 Initiating call to ${phoneNumber} for ${scenarioName}`);
+    console.log(`🤖 Using assistant ID: ${assistantId}`);
+
+    const vapiPayload = {
+      assistantId: assistantId,
+      customer: {
+        number: phoneNumber,
+      }
+    };
+    
+    console.log('📤 Vapi API payload:', JSON.stringify(vapiPayload));
 
     // Call Vapi API to create outbound call
     const response = await fetch('https://api.vapi.ai/call/phone', {
@@ -31,38 +68,63 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${VAPI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        assistantId: assistantId,
-        customer: {
-          number: phoneNumber,
-        }
-      }),
+      body: JSON.stringify(vapiPayload),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('📥 Vapi API raw response:', responseText);
+    console.log('📊 Vapi API status:', response.status);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse Vapi response:', e);
+      data = { message: responseText };
+    }
 
     if (!response.ok) {
       console.error('❌ Vapi API error:', data);
-      return Response.json(
-        { success: false, error: data.message || 'Failed to initiate call' },
-        { status: response.status }
-      );
+      return new Response(JSON.stringify({
+        success: false,
+        error: data.message || data.error || 'Failed to initiate call',
+        details: data
+      }), {
+        status: 200, // Return 200 so frontend can read the error
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     console.log(`✅ Call initiated successfully:`, data);
 
-    return Response.json({
+    return new Response(JSON.stringify({
       success: true,
       callId: data.id,
       message: 'Call initiated successfully'
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
 
   } catch (error) {
     console.error('❌ Error initiating call:', error);
     
-    return Response.json(
-      { success: false, error: error.message || 'Failed to initiate call' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message || 'Failed to initiate call',
+      stack: error.stack
+    }), {
+      status: 200, // Return 200 so frontend can read the error
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   }
 });
