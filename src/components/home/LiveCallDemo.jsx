@@ -7,52 +7,28 @@ import { Badge } from "@/components/ui/badge";
 const scenarios = [
   {
     id: 1,
-    title: "HVAC Repair Booking",
-    icon: "🔧",
+    title: "Hair Salon",
+    icon: "💇",
+    description: "Book a haircut appointment",
+    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID",
     conversation: [
-      { speaker: "ai", text: "Thank you for calling ABC HVAC Services! This is Sarah, your AI assistant. How can I help you today?", delay: 500 },
-      { speaker: "customer", text: "Hi, my air conditioner stopped working and it's really hot.", delay: 2000 },
-      { speaker: "ai", text: "I'm sorry to hear that! I can definitely help you schedule a repair. Can I get your name and address?", delay: 1500 },
-      { speaker: "customer", text: "Sure, it's John Smith at 123 Main Street.", delay: 2000 },
-      { speaker: "ai", text: "Perfect, John. I have an opening tomorrow at 2 PM or Thursday at 10 AM. Which works better for you?", delay: 1500 },
-      { speaker: "customer", text: "Tomorrow at 2 PM works great.", delay: 1500 },
-      { speaker: "ai", text: "Excellent! I've booked your appointment for tomorrow at 2 PM. You'll receive a confirmation text shortly. Is there anything else I can help with?", delay: 2000 },
-      { speaker: "customer", text: "No, that's all. Thank you!", delay: 1500 },
-      { speaker: "ai", text: "You're welcome, John! Our technician will see you tomorrow. Have a great day!", delay: 1500 }
+      { speaker: "ai", text: "Thank you for calling Luxe Hair Salon! This is Mia, your AI assistant. How can I help you today?", delay: 500 },
+      { speaker: "customer", text: "Hi, I'd like to book a haircut appointment.", delay: 2000 },
+      { speaker: "ai", text: "I'd be happy to help! Are you looking for just a cut, or would you like color or styling as well?", delay: 1500 },
+      { speaker: "customer", text: "Just a cut and blow-dry, please.", delay: 1800 },
+      { speaker: "ai", text: "Perfect! We have availability tomorrow at 11 AM or Friday at 2 PM. Which works better for you?", delay: 1500 },
+      { speaker: "customer", text: "Friday at 2 PM sounds great.", delay: 1500 },
+      { speaker: "ai", text: "Wonderful! May I have your name and phone number?", delay: 1200 },
+      { speaker: "customer", text: "It's Sarah Johnson, 555-0123.", delay: 2000 },
+      { speaker: "ai", text: "Perfect, Sarah! I've booked your haircut and blow-dry for Friday at 2 PM. You'll receive a confirmation text. See you then!", delay: 2000 }
     ]
   },
   {
     id: 2,
-    title: "Medical Appointment",
-    icon: "🏥",
-    conversation: [
-      { speaker: "ai", text: "Good morning! You've reached Riverside Medical Center. I'm Alex, how may I assist you?", delay: 500 },
-      { speaker: "customer", text: "I need to schedule a check-up with Dr. Martinez.", delay: 2000 },
-      { speaker: "ai", text: "I'd be happy to help! May I have your name and date of birth?", delay: 1500 },
-      { speaker: "customer", text: "Maria Garcia, March 15th, 1985.", delay: 2000 },
-      { speaker: "ai", text: "Thank you, Maria. I see you in our system. Dr. Martinez has availability next Monday at 9 AM or Wednesday at 3 PM.", delay: 2000 },
-      { speaker: "customer", text: "Monday at 9 AM works perfectly.", delay: 1500 },
-      { speaker: "ai", text: "Perfect! I've scheduled your appointment with Dr. Martinez for Monday, 9 AM. You'll receive a reminder 24 hours before. See you then!", delay: 2000 }
-    ]
-  },
-  {
-    id: 3,
-    title: "Plumbing Emergency",
-    icon: "🚰",
-    conversation: [
-      { speaker: "ai", text: "Swift Plumbing, this is Jamie speaking. What's your emergency?", delay: 500 },
-      { speaker: "customer", text: "I have a burst pipe in my kitchen! Water everywhere!", delay: 2000 },
-      { speaker: "ai", text: "I understand this is urgent. First, have you turned off the main water valve?", delay: 1500 },
-      { speaker: "customer", text: "Yes, I just did that.", delay: 1500 },
-      { speaker: "ai", text: "Good thinking! I'm dispatching a plumber to your location immediately. Can I get your address?", delay: 1500 },
-      { speaker: "customer", text: "456 Oak Avenue, apartment 3B.", delay: 2000 },
-      { speaker: "ai", text: "Perfect. A technician will be there within 30 minutes. I'm sending you their contact info now. Stay safe!", delay: 2000 }
-    ]
-  },
-  {
-    id: 4,
-    title: "Restaurant Reservation",
+    title: "Restaurant",
     icon: "🍽️",
+    description: "Make a dinner reservation",
+    vapiAssistantId: "YOUR_RESTAURANT_ASSISTANT_ID",
     conversation: [
       { speaker: "ai", text: "Thank you for calling Bella Vista Restaurant. This is Emma, how can I help you?", delay: 500 },
       { speaker: "customer", text: "I'd like to make a reservation for dinner this Saturday.", delay: 2000 },
@@ -64,6 +40,46 @@ const scenarios = [
       { speaker: "customer", text: "David Chen.", delay: 1500 },
       { speaker: "ai", text: "All set, David! Your table for four is reserved for Saturday at 7:15 PM. We look forward to seeing you!", delay: 2000 }
     ]
+  },
+  {
+    id: 3,
+    title: "Photographer",
+    icon: "📸",
+    description: "Schedule a photo session",
+    vapiAssistantId: "YOUR_PHOTOGRAPHER_ASSISTANT_ID",
+    conversation: [
+      { speaker: "ai", text: "Hi! You've reached Capture Moments Photography. I'm Alex, how may I assist you?", delay: 500 },
+      { speaker: "customer", text: "I'm interested in booking a family photo session.", delay: 2000 },
+      { speaker: "ai", text: "That's wonderful! We offer indoor studio sessions or outdoor location shoots. Which would you prefer?", delay: 1500 },
+      { speaker: "customer", text: "Outdoor would be great, maybe at a park?", delay: 1800 },
+      { speaker: "ai", text: "Perfect choice! How many people will be in the photos?", delay: 1200 },
+      { speaker: "customer", text: "Five people - two adults and three kids.", delay: 1500 },
+      { speaker: "ai", text: "Lovely! Our outdoor sessions are 90 minutes. We have availability next Sunday at 10 AM or 4 PM for the best natural lighting.", delay: 2000 },
+      { speaker: "customer", text: "10 AM works better for us.", delay: 1500 },
+      { speaker: "ai", text: "Excellent! Can I get your name and email to send you the session details and location?", delay: 1500 },
+      { speaker: "customer", text: "Lisa Martinez, lisa.m@email.com", delay: 2000 },
+      { speaker: "ai", text: "Perfect, Lisa! Your family session is booked for Sunday at 10 AM. I'll email you all the details shortly. Can't wait to capture your beautiful family!", delay: 2500 }
+    ]
+  },
+  {
+    id: 4,
+    title: "Coffee Shop",
+    icon: "☕",
+    description: "Place a pickup order",
+    vapiAssistantId: "YOUR_COFFEE_SHOP_ASSISTANT_ID",
+    conversation: [
+      { speaker: "ai", text: "Good morning! Thanks for calling Daily Grind Coffee. This is Jordan, what can I get started for you?", delay: 500 },
+      { speaker: "customer", text: "Hi! I'd like to place an order for pickup.", delay: 1800 },
+      { speaker: "ai", text: "Absolutely! What would you like to order?", delay: 1200 },
+      { speaker: "customer", text: "Can I get a large caramel latte and a blueberry muffin?", delay: 2000 },
+      { speaker: "ai", text: "You got it! Would you like the latte hot or iced?", delay: 1200 },
+      { speaker: "customer", text: "Hot, please.", delay: 1200 },
+      { speaker: "ai", text: "Perfect! That's one large hot caramel latte and a blueberry muffin. Your total is $8.50. When would you like to pick it up?", delay: 1800 },
+      { speaker: "customer", text: "In about 15 minutes?", delay: 1500 },
+      { speaker: "ai", text: "That works great! Can I get a name for the order?", delay: 1200 },
+      { speaker: "customer", text: "Michael.", delay: 1200 },
+      { speaker: "ai", text: "Awesome, Michael! Your order will be ready in 15 minutes. See you soon!", delay: 1500 }
+    ]
   }
 ];
 
@@ -73,9 +89,21 @@ export default function LiveCallDemo() {
   const [conversation, setConversation] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [callDuration, setCallDuration] = useState(0);
+  const [useVapi, setUseVapi] = useState(false); // Toggle for Vapi integration
+
+  // Vapi integration hook - currently using demo mode
+  useEffect(() => {
+    // TODO: Initialize Vapi SDK here when ready
+    // Example: 
+    // import Vapi from "@vapi-ai/web";
+    // const vapi = new Vapi("YOUR_PUBLIC_KEY");
+    
+    // For now, we'll use demo conversations
+    setUseVapi(false);
+  }, []);
 
   useEffect(() => {
-    if (isCallActive && selectedScenario) {
+    if (isCallActive && selectedScenario && !useVapi) {
       const scenario = scenarios.find(s => s.id === selectedScenario);
       if (currentStep < scenario.conversation.length) {
         const currentMessage = scenario.conversation[currentStep];
@@ -91,7 +119,7 @@ export default function LiveCallDemo() {
         }, 1500);
       }
     }
-  }, [isCallActive, currentStep, selectedScenario]);
+  }, [isCallActive, currentStep, selectedScenario, useVapi]);
 
   useEffect(() => {
     let interval;
@@ -109,6 +137,10 @@ export default function LiveCallDemo() {
     setConversation([]);
     setCurrentStep(0);
     setCallDuration(0);
+
+    // TODO: When Vapi is integrated, start real call here
+    // const scenario = scenarios.find(s => s.id === scenarioId);
+    // vapi.start(scenario.vapiAssistantId);
   };
 
   const endCall = () => {
@@ -117,6 +149,9 @@ export default function LiveCallDemo() {
     setCurrentStep(0);
     setCallDuration(0);
     setSelectedScenario(null);
+
+    // TODO: When Vapi is integrated, stop call here
+    // vapi.stop();
   };
 
   const formatTime = (seconds) => {
@@ -154,6 +189,9 @@ export default function LiveCallDemo() {
                 <h4 className="font-semibold text-[#1C1C1C] mb-2">
                   {scenario.title}
                 </h4>
+                <p className="text-sm text-[#6B7280] mb-3">
+                  {scenario.description}
+                </p>
                 <Button
                   className="w-full gradient-button text-white mt-3"
                   size="sm"
