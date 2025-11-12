@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
@@ -243,8 +244,8 @@ export default function Layout({ children }) {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:chanceb323@gmail.com" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
-                    chanceb323@gmail.com
+                  <a href="mailto:chance@contentdrip.ai" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    chance@contentdrip.ai
                   </a>
                 </li>
               </ul>
