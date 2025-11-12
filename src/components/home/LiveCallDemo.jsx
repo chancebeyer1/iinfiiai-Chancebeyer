@@ -13,15 +13,15 @@ import {
 const scenarios = [
   {
     id: 1,
-    title: "Hair Salon",
-    description: "Book a haircut appointment",
-    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID",
-  },
-  {
-    id: 2,
     title: "Restaurant",
     description: "Make a dinner reservation",
     vapiAssistantId: "YOUR_RESTAURANT_ASSISTANT_ID",
+  },
+  {
+    id: 2,
+    title: "Hair Salon",
+    description: "Book a haircut appointment",
+    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID",
   },
   {
     id: 3,
@@ -38,7 +38,7 @@ const scenarios = [
 ];
 
 export default function LiveCallDemo() {
-  const [selectedScenario, setSelectedScenario] = useState(null);
+  const [selectedScenario, setSelectedScenario] = useState(1); // Default to Restaurant
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
@@ -125,11 +125,9 @@ export default function LiveCallDemo() {
                 isCallActive ? 'scale-110' : isHovering ? 'scale-105' : 'scale-100'
               }`}
               style={{
-                background: isCallActive
-                  ? 'conic-gradient(from 0deg, #00D48A, #51A7FF, #00D48A, #51A7FF, #00D48A)'
-                  : 'conic-gradient(from 0deg, #1e3a8a, #0ea5e9, #06b6d4, #0ea5e9, #1e3a8a)',
+                background: 'conic-gradient(from 0deg, #00D48A, #51A7FF, #00D48A, #51A7FF, #00D48A)',
                 filter: 'blur(40px)',
-                opacity: isCallActive ? 1 : 0.8,
+                opacity: isCallActive ? 1 : 0.7,
                 animation: isCallActive ? 'spin 8s linear infinite' : 'spin 20s linear infinite'
               }}
             />
@@ -142,13 +140,11 @@ export default function LiveCallDemo() {
                   disabled={!selectedScenario}
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
-                  className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
                   style={{
-                    background: selectedScenario 
-                      ? 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(40,40,40,0.9) 100%)'
-                      : 'rgba(100,100,100,0.5)',
+                    background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(40,40,40,0.9) 100%)',
                     backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255,255,255,0.1)'
+                    border: '2px solid rgba(0,212,138,0.3)'
                   }}
                 >
                   <Phone className="w-6 h-6 mr-3 inline" />
@@ -161,7 +157,7 @@ export default function LiveCallDemo() {
                     className="px-8 py-4 rounded-2xl text-white backdrop-blur-xl"
                     style={{
                       background: 'rgba(0,0,0,0.7)',
-                      border: '2px solid rgba(255,255,255,0.2)'
+                      border: '2px solid rgba(0,212,138,0.4)'
                     }}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -170,7 +166,7 @@ export default function LiveCallDemo() {
                         {scenarios.find(s => s.id === selectedScenario)?.title}
                       </span>
                     </div>
-                    <div className="text-center text-2xl font-bold text-[#00D48A]">
+                    <div className="text-center text-2xl font-bold gradient-text">
                       {formatTime(callDuration)}
                     </div>
                   </div>
@@ -180,9 +176,10 @@ export default function LiveCallDemo() {
                     {[...Array(7)].map((_, i) => (
                       <div
                         key={i}
-                        className="w-2 bg-white rounded-full animate-pulse"
+                        className="w-2 rounded-full animate-pulse"
                         style={{
                           height: `${Math.random() * 40 + 20}px`,
+                          background: i % 2 === 0 ? '#00D48A' : '#51A7FF',
                           animationDelay: `${i * 0.1}s`,
                           animationDuration: '0.6s'
                         }}
@@ -219,12 +216,6 @@ export default function LiveCallDemo() {
               </div>
             </div>
           </div>
-        )}
-
-        {!isCallActive && !selectedScenario && (
-          <p className="text-center text-sm text-[#6B7280] mt-8">
-            Please select a scenario above to start your demo call
-          </p>
         )}
       </div>
 
