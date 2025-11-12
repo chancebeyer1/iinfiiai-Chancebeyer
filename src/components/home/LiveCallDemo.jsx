@@ -15,25 +15,25 @@ const scenarios = [
     id: 1,
     title: "Restaurant",
     description: "Make a dinner reservation",
-    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e",
   },
   {
     id: 2,
     title: "Hair Salon",
     description: "Book a haircut appointment",
-    vapiAssistantId: "62001a29-6981-47da-873d-33cd0516f9c3", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "62001a29-6981-47da-873d-33cd0516f9c3",
   },
   {
     id: 3,
     title: "Photographer",
     description: "Schedule a photo session",
-    vapiAssistantId: "d4dd1fe0-d6f9-4019-bdac-ebd08af12829", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "d4dd1fe0-d6f9-4019-bdac-ebd08af12829",
   },
   {
     id: 4,
     title: "Coffee Shop",
     description: "Place a pickup order",
-    vapiAssistantId: "93027f68-3557-418e-92c3-5cd24833af22", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "93027f68-3557-418e-92c3-5cd24833af22",
   }
 ];
 
@@ -47,9 +47,9 @@ export default function LiveCallDemo() {
 
   // Initialize Vapi
   useEffect(() => {
-    // Check if Vapi is loaded
-    if (window.vapiSDK) {
-      const vapi = new window.vapiSDK("85b43e2b-a309-4004-a0e6-f2f08ac32c9e"); // Replace with your Vapi Public Key
+    // Check if Vapi is loaded (the SDK exports as window.Vapi, not window.vapiSDK)
+    if (window.Vapi) {
+      const vapi = new window.Vapi("85b43e2b-a309-4004-a0e6-f2f08ac32c9e");
       vapiInstance.current = vapi;
       setVapiLoaded(true);
 
@@ -77,7 +77,16 @@ export default function LiveCallDemo() {
         setIsCallActive(false);
       });
     } else {
-      console.warn("Vapi SDK not loaded. Please add the script to your index.html");
+      console.warn("Vapi SDK not loaded yet, will retry...");
+      // Retry after a short delay
+      const timer = setTimeout(() => {
+        if (window.Vapi) {
+          const vapi = new window.Vapi("85b43e2b-a309-4004-a0e6-f2f08ac32c9e");
+          vapiInstance.current = vapi;
+          setVapiLoaded(true);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
 
     return () => {
