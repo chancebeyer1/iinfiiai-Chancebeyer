@@ -1,11 +1,5 @@
 /**
  * Initiates an outbound call using Vapi
- * 
- * @param {Object} params
- * @param {string} params.phoneNumber - Phone number to call (with country code)
- * @param {string} params.assistantId - Vapi assistant ID
- * @param {string} params.scenarioName - Name of the scenario (for logging)
- * @returns {Object} - Call status
  */
 export default async function initiateVapiCall({ phoneNumber, assistantId, scenarioName }, { secrets }) {
   try {
@@ -15,10 +9,11 @@ export default async function initiateVapiCall({ phoneNumber, assistantId, scena
       throw new Error('Vapi API key not configured. Please add VAPI_PRIVATE_KEY to secrets.');
     }
 
-    // Validate inputs
     if (!phoneNumber || !assistantId) {
       throw new Error('Phone number and assistant ID are required');
     }
+
+    console.log(`📞 Initiating call to ${phoneNumber} for ${scenarioName}`);
 
     // Call Vapi API to create outbound call
     const response = await fetch('https://api.vapi.ai/call/phone', {
@@ -28,8 +23,6 @@ export default async function initiateVapiCall({ phoneNumber, assistantId, scena
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        phoneNumberId: null, // Use default phone number from Vapi
-        customerId: phoneNumber,
         assistantId: assistantId,
         customer: {
           number: phoneNumber,
@@ -44,7 +37,7 @@ export default async function initiateVapiCall({ phoneNumber, assistantId, scena
       throw new Error(data.message || 'Failed to initiate call');
     }
 
-    console.log(`✅ Call initiated for ${scenarioName} to ${phoneNumber}`, data);
+    console.log(`✅ Call initiated successfully:`, data);
 
     return {
       success: true,
