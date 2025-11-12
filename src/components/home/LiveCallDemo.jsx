@@ -62,55 +62,68 @@ export default function LiveCallDemo() {
           return;
         }
 
-        // Try loading from NPM CDN
+        console.log('📦 Loading Vapi SDK...');
+        
+        // Use unpkg CDN with specific version
         scriptElement = document.createElement('script');
-        scriptElement.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.0/dist/index.umd.js';
-        scriptElement.async = true;
-        scriptElement.type = 'text/javascript';
+        scriptElement.src = 'https://unpkg.com/@vapi-ai/web@2.3.5/dist/index.umd.js';
+        scriptElement.crossOrigin = 'anonymous';
         
-        scriptElement.onload = () => {
-          console.log('✅ Vapi Web SDK script loaded');
-          // Wait a bit for the SDK to initialize
-          setTimeout(() => {
-            if (mounted && window.Vapi) {
-              console.log('✅ window.Vapi available');
-              setVapiLoaded(true);
-              initializeVapi();
-            } else {
-              console.error('❌ window.Vapi not available after script load');
-              setErrorMessage("Vapi SDK failed to initialize");
-            }
-          }, 500);
-        };
-        
-        scriptElement.onerror = (error) => {
-          console.error('❌ Failed to load Vapi SDK script:', error);
-          setErrorMessage("Failed to load Vapi SDK. Please refresh the page.");
-        };
+        const loadPromise = new Promise((resolve, reject) => {
+          scriptElement.onload = () => {
+            console.log('✅ Script loaded successfully');
+            resolve();
+          };
+          scriptElement.onerror = (e) => {
+            console.error('❌ Script load error:', e);
+            reject(new Error('Failed to load Vapi SDK'));
+          };
+        });
         
         document.head.appendChild(scriptElement);
+        await loadPromise;
+        
+        // Wait for Vapi to be available on window
+        let attempts = 0;
+        const maxAttempts = 20;
+        while (!window.Vapi && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          console.log(`Waiting for Vapi... attempt ${attempts}`);
+        }
+        
+        if (mounted && window.Vapi) {
+          console.log('✅ window.Vapi available');
+          setVapiLoaded(true);
+          initializeVapi();
+        } else {
+          throw new Error('Vapi SDK did not initialize');
+        }
         
       } catch (error) {
         console.error('Error loading Vapi:', error);
-        setErrorMessage("Error loading Vapi SDK");
+        if (mounted) {
+          setErrorMessage("Unable to load voice SDK. Please refresh the page.");
+        }
       }
     };
 
     const initializeVapi = () => {
       try {
         if (!window.Vapi) {
-          console.error('window.Vapi not found in initializeVapi');
+          console.error('window.Vapi not found');
           return;
         }
         
         console.log('🔧 Initializing Vapi instance...');
         
-        // Public key for client-side
+        // Initialize with public key
         const vapi = new window.Vapi("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
         
         // Set up event listeners
         vapi.on("call-start", () => {
           console.log('📞 Call started');
+          if (!mounted) return;
           setIsCallActive(true);
           setStatus("connected");
           setCallDuration(0);
@@ -119,6 +132,7 @@ export default function LiveCallDemo() {
 
         vapi.on("call-end", () => {
           console.log('📞 Call ended');
+          if (!mounted) return;
           setIsCallActive(false);
           setStatus("idle");
           setCallDuration(0);
@@ -135,6 +149,7 @@ export default function LiveCallDemo() {
 
         vapi.on("error", (error) => {
           console.error("❌ Vapi error:", error);
+          if (!mounted) return;
           setErrorMessage(error.message || "Call error occurred");
           setIsCallActive(false);
           setStatus("error");
@@ -150,7 +165,9 @@ export default function LiveCallDemo() {
         
       } catch (error) {
         console.error('Error initializing Vapi:', error);
-        setErrorMessage("Failed to initialize Vapi: " + error.message);
+        if (mounted) {
+          setErrorMessage("Failed to initialize: " + error.message);
+        }
       }
     };
 
@@ -164,9 +181,6 @@ export default function LiveCallDemo() {
         } catch (e) {
           console.error('Cleanup error:', e);
         }
-      }
-      if (scriptElement && document.head.contains(scriptElement)) {
-        document.head.removeChild(scriptElement);
       }
     };
   }, []);
@@ -185,7 +199,7 @@ export default function LiveCallDemo() {
   const startCall = async () => {
     if (!selectedScenario || !vapiInstance.current) {
       console.log('Cannot start call - missing requirements');
-      setErrorMessage("Vapi SDK not ready. Please refresh the page.");
+      setErrorMessage("Voice SDK not ready. Please refresh the page.");
       return;
     }
 
@@ -195,7 +209,6 @@ export default function LiveCallDemo() {
     setStatus("connecting");
 
     try {
-      // Fetch secure token from backend
       console.log('🔐 Fetching client token...');
       const tokenResponse = await fetch('/api/functions/vapi-token', {
         method: 'POST',
@@ -212,7 +225,6 @@ export default function LiveCallDemo() {
       const { token } = await tokenResponse.json();
       console.log('✅ Got client token');
 
-      // Start call with token
       console.log('📞 Starting call with assistant:', scenario.assistantId);
       await vapiInstance.current.start({
         token,
@@ -252,12 +264,8 @@ export default function LiveCallDemo() {
     <div className="mt-16">
       <style>{`
         @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
@@ -296,7 +304,7 @@ export default function LiveCallDemo() {
         {!vapiLoaded && !errorMessage && (
           <div className="text-sm text-amber-600 mb-4 flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Loading Vapi SDK...
+            Loading voice interface...
           </div>
         )}
 
