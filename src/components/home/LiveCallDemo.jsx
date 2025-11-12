@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Phone, PhoneOff, Mic, Volume2 } from "lucide-react";
@@ -15,33 +15,77 @@ const scenarios = [
     id: 1,
     title: "Restaurant",
     description: "Make a dinner reservation",
-    vapiAssistantId: "YOUR_RESTAURANT_ASSISTANT_ID",
+    vapiAssistantId: "YOUR_RESTAURANT_ASSISTANT_ID", // Replace with your Vapi Assistant ID
   },
   {
     id: 2,
     title: "Hair Salon",
     description: "Book a haircut appointment",
-    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID",
+    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID", // Replace with your Vapi Assistant ID
   },
   {
     id: 3,
     title: "Photographer",
     description: "Schedule a photo session",
-    vapiAssistantId: "YOUR_PHOTOGRAPHER_ASSISTANT_ID",
+    vapiAssistantId: "YOUR_PHOTOGRAPHER_ASSISTANT_ID", // Replace with your Vapi Assistant ID
   },
   {
     id: 4,
     title: "Coffee Shop",
     description: "Place a pickup order",
-    vapiAssistantId: "YOUR_COFFEE_SHOP_ASSISTANT_ID",
+    vapiAssistantId: "YOUR_COFFEE_SHOP_ASSISTANT_ID", // Replace with your Vapi Assistant ID
   }
 ];
 
 export default function LiveCallDemo() {
-  const [selectedScenario, setSelectedScenario] = useState(1); // Default to Restaurant
+  const [selectedScenario, setSelectedScenario] = useState(1);
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [vapiLoaded, setVapiLoaded] = useState(false);
+  const vapiInstance = useRef(null);
+
+  // Initialize Vapi
+  useEffect(() => {
+    // Check if Vapi is loaded
+    if (window.vapiSDK) {
+      const vapi = new window.vapiSDK("YOUR_VAPI_PUBLIC_KEY"); // Replace with your Vapi Public Key
+      vapiInstance.current = vapi;
+      setVapiLoaded(true);
+
+      // Listen to call events
+      vapi.on("call-start", () => {
+        setIsCallActive(true);
+        setCallDuration(0);
+      });
+
+      vapi.on("call-end", () => {
+        setIsCallActive(false);
+        setCallDuration(0);
+      });
+
+      vapi.on("speech-start", () => {
+        console.log("AI started speaking");
+      });
+
+      vapi.on("speech-end", () => {
+        console.log("AI stopped speaking");
+      });
+
+      vapi.on("error", (error) => {
+        console.error("Vapi error:", error);
+        setIsCallActive(false);
+      });
+    } else {
+      console.warn("Vapi SDK not loaded. Please add the script to your index.html");
+    }
+
+    return () => {
+      if (vapiInstance.current) {
+        vapiInstance.current.stop();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let interval;
@@ -53,22 +97,26 @@ export default function LiveCallDemo() {
     return () => clearInterval(interval);
   }, [isCallActive]);
 
-  const startCall = () => {
-    if (!selectedScenario) return;
-    setIsCallActive(true);
-    setCallDuration(0);
+  const startCall = async () => {
+    if (!selectedScenario || !vapiInstance.current) return;
 
-    // TODO: When Vapi is integrated, start real call here
-    // const scenario = scenarios.find(s => s.id === selectedScenario);
-    // vapi.start(scenario.vapiAssistantId);
+    const scenario = scenarios.find(s => s.id === selectedScenario);
+    
+    try {
+      // Start the Vapi call with the selected assistant
+      await vapiInstance.current.start(scenario.vapiAssistantId);
+    } catch (error) {
+      console.error("Failed to start call:", error);
+      alert("Failed to start call. Please check your Vapi configuration.");
+    }
   };
 
   const endCall = () => {
+    if (vapiInstance.current) {
+      vapiInstance.current.stop();
+    }
     setIsCallActive(false);
     setCallDuration(0);
-
-    // TODO: When Vapi is integrated, stop call here
-    // vapi.stop();
   };
 
   const formatTime = (seconds) => {
@@ -92,6 +140,7 @@ export default function LiveCallDemo() {
           <Select
             value={selectedScenario?.toString()}
             onValueChange={(value) => setSelectedScenario(parseInt(value))}
+            disabled={isCallActive}
           >
             <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
               <SelectValue placeholder="Select a scenario..." />
@@ -108,6 +157,12 @@ export default function LiveCallDemo() {
             </SelectContent>
           </Select>
         </div>
+
+        {!vapiLoaded && (
+          <div className="text-sm text-amber-600 mb-4">
+            Vapi SDK not detected. Add the Vapi script to enable live calls.
+          </div>
+        )}
       </div>
 
       {/* AI Orb Interface */}
@@ -137,7 +192,7 @@ export default function LiveCallDemo() {
               {!isCallActive ? (
                 <Button
                   onClick={startCall}
-                  disabled={!selectedScenario}
+                  disabled={!selectedScenario || !vapiLoaded}
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
                   className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
