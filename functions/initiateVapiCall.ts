@@ -55,10 +55,28 @@ Deno.serve(async (req) => {
     // Get the Vapi phone number ID from environment
     const VAPI_PHONE_NUMBER_ID = Deno.env.get("VAPI_PHONE_NUMBER_ID");
     
+    console.log('📞 Phone Number ID exists:', !!VAPI_PHONE_NUMBER_ID);
+    console.log('📞 Phone Number ID value:', VAPI_PHONE_NUMBER_ID);
+    
     if (!VAPI_PHONE_NUMBER_ID) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Vapi Phone Number ID not configured. Please add VAPI_PHONE_NUMBER_ID to secrets.'
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(VAPI_PHONE_NUMBER_ID)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Invalid Phone Number ID format. Expected UUID format (e.g., 12345678-1234-1234-1234-123456789abc), got: ${VAPI_PHONE_NUMBER_ID}`
       }), {
         status: 200,
         headers: {
