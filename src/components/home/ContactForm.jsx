@@ -30,8 +30,43 @@ export default function ContactForm() {
       // Save to database
       await base44.entities.ContactSubmission.create(formData);
 
-      // Send email notifications
-      await base44.functions.invoke('sendContactEmail', formData);
+      // Send email notifications to both users
+      const emailBody = `
+New Contact Form Submission
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 CONTACT DETAILS
+
+Name:     ${formData.name}
+Email:    ${formData.email}
+Company:  ${formData.company}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💬 MESSAGE
+
+${formData.message || 'No message provided'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This submission has been saved to the database.
+      `.trim();
+
+      await Promise.all([
+        base44.integrations.Core.SendEmail({
+          from_name: "iinfii.ai Contact Form",
+          to: "chanceb323@gmail.com",
+          subject: `New Contact: ${formData.name} from ${formData.company}`,
+          body: emailBody
+        }),
+        base44.integrations.Core.SendEmail({
+          from_name: "iinfii.ai Contact Form",
+          to: "billy@vasttrack.ai",
+          subject: `New Contact: ${formData.name} from ${formData.company}`,
+          body: emailBody
+        })
+      ]);
 
       console.log('✅ Form submitted successfully');
       setIsSubmitted(true);
