@@ -1,4 +1,5 @@
 import React from "react";
+import LiveCallDemo from "./LiveCallDemo";
 
 const steps = [
   { title: "Answer", text: "Your AI picks up instantly, verifies intent, and qualifies." },
@@ -21,7 +22,7 @@ export default function HowItWorks() {
         </div>
 
         {/* Steps */}
-        <div className="grid md:grid-cols-4 gap-8 relative">
+        <div className="grid md:grid-cols-4 gap-8 relative mb-16">
           {/* Connection lines for desktop */}
           <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-[#00D48A] to-[#51A7FF]" style={{ top: '3rem' }} />
 
@@ -45,18 +46,8 @@ export default function HowItWorks() {
           ))}
         </div>
 
-        {/* Illustration */}
-        <div className="mt-16 relative">
-          <div className="aspect-video rounded-2xl overflow-hidden border border-gray-200 shadow-2xl">
-            <img
-              src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200"
-              alt="Team collaboration"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {/* Decorative gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#F9F9F7] via-transparent to-transparent rounded-2xl pointer-events-none" />
-        </div>
+        {/* Live Demo */}
+        <LiveCallDemo />
       </div>
     </section>
   );
