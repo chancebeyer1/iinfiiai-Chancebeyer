@@ -52,16 +52,20 @@ export default function LiveCallDemo() {
   // Load Vapi SDK via script tag
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js';
+    // Use the direct Vapi Web SDK CDN
+    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.umd.js';
     script.defer = true;
     script.async = true;
     
     script.onload = () => {
-      console.log('✅ Vapi SDK loaded');
+      console.log('✅ Vapi SDK script loaded');
       
       // Wait a bit for window.Vapi to be available
-      setTimeout(() => {
+      const checkVapi = setInterval(() => {
         if (window.Vapi) {
+          clearInterval(checkVapi);
+          console.log('✅ window.Vapi available');
+          
           try {
             // Create Vapi instance with public key
             vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
@@ -110,13 +114,19 @@ export default function LiveCallDemo() {
             console.log('✅ Vapi initialized');
           } catch (err) {
             console.error('❌ Error initializing Vapi:', err);
-            setError('Failed to initialize voice system');
+            setError('Failed to initialize voice system: ' + err.message);
           }
-        } else {
-          console.error('❌ window.Vapi not available');
-          setError('Voice SDK not properly loaded');
         }
       }, 100);
+      
+      // Stop checking after 5 seconds
+      setTimeout(() => {
+        clearInterval(checkVapi);
+        if (!window.Vapi) {
+          console.error('❌ window.Vapi not available after 5s');
+          setError('Voice SDK not properly loaded');
+        }
+      }, 5000);
     };
     
     script.onerror = () => {
@@ -124,7 +134,7 @@ export default function LiveCallDemo() {
       setError('Failed to load voice SDK');
     };
     
-    const existingScript = document.querySelector('script[src*="VapiAI"]');
+    const existingScript = document.querySelector('script[src*="vapi-ai"]');
     if (!existingScript) {
       document.body.appendChild(script);
     } else {
