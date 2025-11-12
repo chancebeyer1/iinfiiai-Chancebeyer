@@ -15,6 +15,21 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Load Vapi Widget SDK
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js';
+    script.async = true;
+    script.type = 'text/javascript';
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
   const scrollToSection = (href) => {
     const id = href.replace('#', '');
     const element = document.getElementById(id);
@@ -33,13 +48,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#F9F9F7]">
-      {/* Load Vapi SDK directly in head */}
-      <div dangerouslySetInnerHTML={{
-        __html: `
-          <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js"></script>
-        `
-      }} />
-      
       <style>{`
         :root {
           --primary: #00D48A;
@@ -229,6 +237,11 @@ export default function Layout({ children }) {
           </div>
         </div>
       </footer>
+
+      {/* Vapi Widget - floating button */}
+      <div dangerouslySetInnerHTML={{
+        __html: `<vapi-widget assistant-id="93027f68-3557-418e-92c3-5cd24833af22" public-key="9563de4f-ffdd-4ac1-a005-e0c2de27f8b3"></vapi-widget>`
+      }} />
     </div>
   );
 }
