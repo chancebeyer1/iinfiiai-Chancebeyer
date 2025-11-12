@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, PhoneOff, Mic, Volume2 } from "lucide-react";
+import { Phone, PhoneOff, Mic, Volume2, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,25 +14,25 @@ const scenarios = [
     id: 1,
     title: "Restaurant",
     description: "Make a dinner reservation",
-    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e",
+    assistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e",
   },
   {
     id: 2,
     title: "Hair Salon",
     description: "Book a haircut appointment",
-    vapiAssistantId: "62001a29-6981-47da-873d-33cd0516f9c3",
+    assistantId: "62001a29-6981-47da-873d-33cd0516f9c3",
   },
   {
     id: 3,
     title: "Photographer",
     description: "Schedule a photo session",
-    vapiAssistantId: "d4dd1fe0-d6f9-4019-bdac-ebd08af12829",
+    assistantId: "d4dd1fe0-d6f9-4019-bdac-ebd08af12829",
   },
   {
     id: 4,
     title: "Coffee Shop",
     description: "Place a pickup order",
-    vapiAssistantId: "93027f68-3557-418e-92c3-5cd24833af22",
+    assistantId: "93027f68-3557-418e-92c3-5cd24833af22",
   }
 ];
 
@@ -43,71 +42,117 @@ export default function LiveCallDemo() {
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [vapiLoaded, setVapiLoaded] = useState(false);
+  const [status, setStatus] = useState("idle");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const vapiInstance = useRef(null);
 
-  // Initialize Vapi with longer polling
+  // Load Vapi Web SDK
   useEffect(() => {
-    let pollCount = 0;
-    const maxPolls = 50; // Try for 5 seconds
-    
-    const checkVapi = () => {
-      console.log('Checking for Vapi SDK...', pollCount);
-      
-      if (window.Vapi) {
-        console.log('✅ Vapi SDK found!');
-        try {
-          const vapi = new window.Vapi("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
-          vapiInstance.current = vapi;
+    let mounted = true;
+
+    const loadVapi = async () => {
+      try {
+        // Check if already loaded
+        if (window.Vapi) {
+          console.log('✅ Vapi SDK already loaded');
           setVapiLoaded(true);
-
-          // Listen to call events
-          vapi.on("call-start", () => {
-            console.log('Call started');
-            setIsCallActive(true);
-            setCallDuration(0);
-          });
-
-          vapi.on("call-end", () => {
-            console.log('Call ended');
-            setIsCallActive(false);
-            setCallDuration(0);
-          });
-
-          vapi.on("speech-start", () => {
-            console.log("AI started speaking");
-          });
-
-          vapi.on("speech-end", () => {
-            console.log("AI stopped speaking");
-          });
-
-          vapi.on("error", (error) => {
-            console.error("Vapi error:", error);
-            setIsCallActive(false);
-          });
-        } catch (error) {
-          console.error('Error initializing Vapi:', error);
+          initializeVapi();
+          return;
         }
-      } else {
-        pollCount++;
-        if (pollCount < maxPolls) {
-          setTimeout(checkVapi, 100);
-        } else {
-          console.error('❌ Vapi SDK not found after polling');
-        }
+
+        // Dynamically import the Vapi SDK
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
+        script.async = true;
+        
+        script.onload = () => {
+          if (mounted && window.Vapi) {
+            console.log('✅ Vapi Web SDK loaded');
+            setVapiLoaded(true);
+            initializeVapi();
+          }
+        };
+        
+        script.onerror = () => {
+          console.error('❌ Failed to load Vapi SDK');
+          setErrorMessage("Failed to load Vapi SDK");
+        };
+        
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error loading Vapi:', error);
+        setErrorMessage("Error loading Vapi SDK");
       }
     };
 
-    // Start checking after a short delay
-    setTimeout(checkVapi, 100);
+    const initializeVapi = () => {
+      try {
+        if (!window.Vapi) return;
+        
+        // Public key will be used client-side
+        const vapi = new window.Vapi({ publicKey: "9563de4f-ffdd-4ac1-a005-e0c2de27f8b3" });
+        
+        // Set up event listeners
+        vapi.on("call-start", () => {
+          console.log('📞 Call started');
+          setIsCallActive(true);
+          setStatus("connected");
+          setCallDuration(0);
+          setIsLoading(false);
+        });
+
+        vapi.on("call-end", () => {
+          console.log('📞 Call ended');
+          setIsCallActive(false);
+          setStatus("idle");
+          setCallDuration(0);
+          setIsLoading(false);
+        });
+
+        vapi.on("speech-start", () => {
+          console.log("🗣️ AI speaking");
+        });
+
+        vapi.on("speech-end", () => {
+          console.log("🤐 AI stopped speaking");
+        });
+
+        vapi.on("error", (error) => {
+          console.error("❌ Vapi error:", error);
+          setErrorMessage(error.message || "Call error occurred");
+          setIsCallActive(false);
+          setStatus("error");
+          setIsLoading(false);
+        });
+
+        vapi.on("message", (message) => {
+          console.log("📨 Message:", message);
+        });
+
+        vapiInstance.current = vapi;
+        
+      } catch (error) {
+        console.error('Error initializing Vapi:', error);
+        setErrorMessage("Failed to initialize Vapi");
+      }
+    };
+
+    loadVapi();
 
     return () => {
+      mounted = false;
       if (vapiInstance.current) {
-        vapiInstance.current.stop();
+        try {
+          vapiInstance.current.stop();
+        } catch (e) {
+          console.error('Cleanup error:', e);
+        }
       }
     };
   }, []);
 
+  // Call duration timer
   useEffect(() => {
     let interval;
     if (isCallActive) {
@@ -120,27 +165,60 @@ export default function LiveCallDemo() {
 
   const startCall = async () => {
     if (!selectedScenario || !vapiInstance.current) {
-      console.log('Cannot start call', { selectedScenario, vapiInstance: vapiInstance.current });
+      console.log('Cannot start call - missing requirements');
       return;
     }
 
     const scenario = scenarios.find(s => s.id === selectedScenario);
-    
+    setIsLoading(true);
+    setErrorMessage("");
+    setStatus("connecting");
+
     try {
-      console.log('Starting call with assistant:', scenario.vapiAssistantId);
-      await vapiInstance.current.start(scenario.vapiAssistantId);
+      // Fetch secure token from backend
+      console.log('🔐 Fetching client token...');
+      const tokenResponse = await fetch('/api/functions/vapi-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error('Failed to get client token');
+      }
+
+      const { token } = await tokenResponse.json();
+      console.log('✅ Got client token');
+
+      // Start call with token
+      console.log('📞 Starting call with assistant:', scenario.assistantId);
+      await vapiInstance.current.start({
+        token,
+        assistantId: scenario.assistantId
+      });
+
     } catch (error) {
       console.error("Failed to start call:", error);
-      alert("Failed to start call. Please check your Vapi configuration.");
+      setErrorMessage(error.message || "Failed to start call");
+      setIsCallActive(false);
+      setStatus("error");
+      setIsLoading(false);
     }
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     if (vapiInstance.current) {
-      vapiInstance.current.stop();
+      try {
+        await vapiInstance.current.stop();
+      } catch (error) {
+        console.error('Error ending call:', error);
+      }
     }
     setIsCallActive(false);
+    setStatus("idle");
     setCallDuration(0);
+    setIsLoading(false);
   };
 
   const formatTime = (seconds) => {
@@ -164,7 +242,7 @@ export default function LiveCallDemo() {
           <Select
             value={selectedScenario?.toString()}
             onValueChange={(value) => setSelectedScenario(parseInt(value))}
-            disabled={isCallActive}
+            disabled={isCallActive || isLoading}
           >
             <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
               <SelectValue placeholder="Select a scenario..." />
@@ -182,9 +260,17 @@ export default function LiveCallDemo() {
           </Select>
         </div>
 
-        {!vapiLoaded && (
-          <div className="text-sm text-amber-600 mb-4">
-            Vapi SDK not detected. Add the Vapi script to enable live calls.
+        {/* Status Messages */}
+        {!vapiLoaded && !errorMessage && (
+          <div className="text-sm text-amber-600 mb-4 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading Vapi SDK...
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="text-sm text-red-600 mb-4 max-w-md mx-auto p-3 bg-red-50 rounded-lg">
+            {errorMessage}
           </div>
         )}
       </div>
@@ -216,7 +302,7 @@ export default function LiveCallDemo() {
               {!isCallActive ? (
                 <Button
                   onClick={startCall}
-                  disabled={!selectedScenario || !vapiLoaded}
+                  disabled={!selectedScenario || !vapiLoaded || isLoading}
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
                   className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
@@ -226,8 +312,17 @@ export default function LiveCallDemo() {
                     border: '2px solid rgba(0,212,138,0.3)'
                   }}
                 >
-                  <Phone className="w-6 h-6 mr-3 inline" />
-                  Call AI Agent
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-6 h-6 mr-3 inline animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-6 h-6 mr-3 inline" />
+                      Call AI Agent
+                    </>
+                  )}
                 </Button>
               ) : (
                 <div className="relative z-10 flex flex-col items-center gap-6">
