@@ -59,68 +59,64 @@ export default function LiveCallDemo() {
     script.onload = () => {
       console.log('✅ Vapi SDK loaded');
       
-      if (window.vapiSDK) {
-        try {
-          const scenario = scenarios.find(s => s.id === selectedScenario);
-          vapiRef.current = window.vapiSDK.run({
-            apiKey: VAPI_PUBLIC_KEY,
-            assistant: scenario.assistantId,
-            config: {
-              transcriber: {
-                provider: "deepgram",
-                model: "nova-2",
-                language: "en-US",
-              },
-            },
-          });
-          
-          // Setup event listeners
-          vapiRef.current.on('call-start', () => {
-            console.log('📞 Call started');
-            setCallState('active');
-            setError(null);
-            setTranscript([]);
-          });
-
-          vapiRef.current.on('call-end', () => {
-            console.log('📴 Call ended');
-            setCallState('idle');
-            setIsMuted(false);
-          });
-
-          vapiRef.current.on('speech-start', () => {
-            console.log('🎤 User started speaking');
-          });
-
-          vapiRef.current.on('speech-end', () => {
-            console.log('🎤 User stopped speaking');
-          });
-
-          vapiRef.current.on('message', (message) => {
-            console.log('💬 Message:', message);
+      // Wait a bit for window.Vapi to be available
+      setTimeout(() => {
+        if (window.Vapi) {
+          try {
+            // Create Vapi instance with public key
+            vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
             
-            if (message.type === 'transcript' && message.transcript) {
-              setTranscript(prev => [...prev, {
-                role: message.role || 'assistant',
-                text: message.transcript,
-                timestamp: Date.now()
-              }]);
-            }
-          });
+            // Setup event listeners
+            vapiRef.current.on('call-start', () => {
+              console.log('📞 Call started');
+              setCallState('active');
+              setError(null);
+              setTranscript([]);
+            });
 
-          vapiRef.current.on('error', (error) => {
-            console.error('❌ Vapi error:', error);
-            setError(error?.message || 'An error occurred');
-            setCallState('idle');
-          });
+            vapiRef.current.on('call-end', () => {
+              console.log('📴 Call ended');
+              setCallState('idle');
+              setIsMuted(false);
+            });
 
-          setSdkLoaded(true);
-          console.log('✅ Vapi initialized');
-        } catch (err) {
-          console.error('❌ Error initializing Vapi:', err);
-          setError('Failed to initialize voice system');
+            vapiRef.current.on('speech-start', () => {
+              console.log('🎤 User started speaking');
+            });
+
+            vapiRef.current.on('speech-end', () => {
+              console.log('🎤 User stopped speaking');
+            });
+
+            vapiRef.current.on('message', (message) => {
+              console.log('💬 Message:', message);
+              
+              if (message.type === 'transcript' && message.transcript) {
+                setTranscript(prev => [...prev, {
+                  role: message.role || 'assistant',
+                  text: message.transcript,
+                  timestamp: Date.now()
+                }]);
+              }
+            });
+
+            vapiRef.current.on('error', (error) => {
+              console.error('❌ Vapi error:', error);
+              setError(error?.message || 'An error occurred');
+              setCallState('idle');
+            });
+
+            setSdkLoaded(true);
+            console.log('✅ Vapi initialized');
+          } catch (err) {
+            console.error('❌ Error initializing Vapi:', err);
+            setError('Failed to initialize voice system');
+          }
+        } else {
+          console.error('❌ window.Vapi not available');
+          setError('Voice SDK not properly loaded');
         }
-      }
+      }, 100);
     };
     
     script.onerror = () => {
@@ -133,8 +129,8 @@ export default function LiveCallDemo() {
       document.body.appendChild(script);
     } else {
       // SDK already loaded
-      if (window.vapiSDK) {
-        script.onload();
+      if (window.Vapi) {
+        setTimeout(() => script.onload(), 100);
       }
     }
 
@@ -147,7 +143,7 @@ export default function LiveCallDemo() {
         }
       }
     };
-  }, [selectedScenario]);
+  }, []);
 
   const startCall = async () => {
     if (!vapiRef.current || !sdkLoaded) {
@@ -159,7 +155,10 @@ export default function LiveCallDemo() {
       setCallState('connecting');
       setError(null);
 
-      await vapiRef.current.start();
+      const scenario = scenarios.find(s => s.id === selectedScenario);
+      
+      // Start call with assistant ID
+      await vapiRef.current.start(scenario.assistantId);
       
     } catch (err) {
       console.error('❌ Error starting call:', err);
