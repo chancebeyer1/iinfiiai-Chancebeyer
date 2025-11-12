@@ -17,11 +17,16 @@ export default function ContactForm() {
     message: ""
   });
 
+  const [error, setError] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
     try {
+      console.log('📝 Submitting form data:', formData);
+      
       // Save to database
       await base44.entities.ContactSubmission.create(formData);
 
@@ -64,6 +69,7 @@ This submission has been saved to the database.
         })
       ]);
 
+      console.log('✅ Form submitted successfully');
       setIsSubmitted(true);
       
       // Reset form after 3 seconds
@@ -72,8 +78,8 @@ This submission has been saved to the database.
         setFormData({ name: "", email: "", company: "", message: "" });
       }, 3000);
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('There was an error submitting the form. Please try again.');
+      console.error('❌ Error submitting form:', error);
+      setError(error.message || 'Failed to submit form. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +106,12 @@ This submission has been saved to the database.
           </CardHeader>
           
           <CardContent>
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+            
             {isSubmitted ? (
               <div className="py-12 text-center">
                 <div className="w-16 h-16 rounded-full bg-[#00D48A] flex items-center justify-center mx-auto mb-4">
