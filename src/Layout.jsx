@@ -25,10 +25,9 @@ export default function Layout({ children }) {
   };
 
   const navigation = [
-    { label: "How it Works", href: "#how" },
     { label: "Features", href: "#features" },
+    { label: "How it Works", href: "#how" },
     { label: "Results", href: "#results" },
-    { label: "Pricing", href: "#pricing" },
     { label: "Contact", href: "#contact" }
   ];
 

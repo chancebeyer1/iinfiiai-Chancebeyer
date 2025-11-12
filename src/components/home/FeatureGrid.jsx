@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PhoneIncoming, Handshake, TrendingUp, Bot } from "lucide-react";
+import { PhoneIncoming, Handshake, Bot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const icons = {
   PhoneIncoming,
   Handshake,
-  TrendingUp,
   Bot
 };
 
@@ -21,12 +20,6 @@ const features = [
     icon: "Handshake",
     title: "Nurture Customers",
     text: "Follow-ups, reminders, and predictive callbacks that grow LTV."
-  },
-  {
-    icon: "TrendingUp",
-    title: "Coach Your Team",
-    text: "Monitor performance and deliver real-time coaching.",
-    metrics: [{ label: "Inbound revenue tracked", value: "$35.43M" }]
   },
   {
     icon: "Bot",
@@ -66,7 +59,7 @@ export default function FeatureGrid() {
   return (
     <section id="features" className="py-20 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#F9F9F7]">
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           {features.map((feature, index) => {
             const Icon = icons[feature.icon];
             return (
@@ -99,17 +92,6 @@ export default function FeatureGrid() {
                           {feature.kpi.suffix}
                         </span>
                       </div>
-                    </div>
-                  )}
-
-                  {feature.metrics && (
-                    <div className="pt-4 border-t border-gray-100">
-                      {feature.metrics.map((metric, i) => (
-                        <div key={i}>
-                          <div className="text-xs text-[#6B7280] mb-1">{metric.label}</div>
-                          <div className="text-2xl font-bold text-[#1C1C1C]">{metric.value}</div>
-                        </div>
-                      ))}
                     </div>
                   )}
 
