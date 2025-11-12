@@ -52,8 +52,25 @@ Deno.serve(async (req) => {
     console.log(`📞 Initiating call to ${phoneNumber} for ${scenarioName}`);
     console.log(`🤖 Using assistant ID: ${assistantId}`);
 
+    // Get the Vapi phone number ID from environment
+    const VAPI_PHONE_NUMBER_ID = Deno.env.get("VAPI_PHONE_NUMBER_ID");
+    
+    if (!VAPI_PHONE_NUMBER_ID) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Vapi Phone Number ID not configured. Please add VAPI_PHONE_NUMBER_ID to secrets.'
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
     const vapiPayload = {
       assistantId: assistantId,
+      phoneNumberId: VAPI_PHONE_NUMBER_ID,
       customer: {
         number: phoneNumber,
       }
