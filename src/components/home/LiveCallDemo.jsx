@@ -49,10 +49,18 @@ export default function LiveCallDemo() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate phone number
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
-      setError('Please enter a valid phone number (e.g., +1234567890)');
+    // Clean and format phone number
+    let cleanedNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Add + prefix if missing
+    if (!cleanedNumber.startsWith('+')) {
+      cleanedNumber = '+' + cleanedNumber;
+    }
+    
+    // Validate phone number (E.164 format)
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(cleanedNumber)) {
+      setError('Please enter a valid phone number with country code (e.g., +1234567890)');
       return;
     }
 
@@ -63,7 +71,7 @@ export default function LiveCallDemo() {
       const scenario = scenarios.find(s => s.id === selectedScenario);
       
       const payload = {
-        phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+        phoneNumber: cleanedNumber,
         assistantId: scenario.assistantId,
         scenarioName: scenario.title
       };
