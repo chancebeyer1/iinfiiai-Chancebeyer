@@ -15,39 +15,6 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Vapi Web SDK for custom interface
-  useEffect(() => {
-    // Check if already loaded
-    if (window.Vapi || document.querySelector('script[src*="@vapi-ai/web"]')) {
-      console.log('Vapi SDK already loaded');
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    
-    script.onload = () => {
-      console.log('Vapi Web SDK loaded successfully');
-      if (window.Vapi) {
-        console.log('window.Vapi is available');
-      }
-    };
-    
-    script.onerror = (error) => {
-      console.error('Failed to load Vapi Web SDK:', error);
-    };
-    
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
   const scrollToSection = (href) => {
     const id = href.replace('#', '');
     const element = document.getElementById(id);

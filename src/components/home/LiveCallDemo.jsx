@@ -50,6 +50,7 @@ export default function LiveCallDemo() {
   // Load Vapi Web SDK
   useEffect(() => {
     let mounted = true;
+    let scriptElement = null;
 
     const loadVapi = async () => {
       try {
@@ -61,25 +62,34 @@ export default function LiveCallDemo() {
           return;
         }
 
-        // Dynamically import the Vapi SDK
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
-        script.async = true;
+        // Try loading from NPM CDN
+        scriptElement = document.createElement('script');
+        scriptElement.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.0/dist/index.umd.js';
+        scriptElement.async = true;
+        scriptElement.type = 'text/javascript';
         
-        script.onload = () => {
-          if (mounted && window.Vapi) {
-            console.log('✅ Vapi Web SDK loaded');
-            setVapiLoaded(true);
-            initializeVapi();
-          }
+        scriptElement.onload = () => {
+          console.log('✅ Vapi Web SDK script loaded');
+          // Wait a bit for the SDK to initialize
+          setTimeout(() => {
+            if (mounted && window.Vapi) {
+              console.log('✅ window.Vapi available');
+              setVapiLoaded(true);
+              initializeVapi();
+            } else {
+              console.error('❌ window.Vapi not available after script load');
+              setErrorMessage("Vapi SDK failed to initialize");
+            }
+          }, 500);
         };
         
-        script.onerror = () => {
-          console.error('❌ Failed to load Vapi SDK');
-          setErrorMessage("Failed to load Vapi SDK");
+        scriptElement.onerror = (error) => {
+          console.error('❌ Failed to load Vapi SDK script:', error);
+          setErrorMessage("Failed to load Vapi SDK. Please refresh the page.");
         };
         
-        document.head.appendChild(script);
+        document.head.appendChild(scriptElement);
+        
       } catch (error) {
         console.error('Error loading Vapi:', error);
         setErrorMessage("Error loading Vapi SDK");
@@ -88,10 +98,15 @@ export default function LiveCallDemo() {
 
     const initializeVapi = () => {
       try {
-        if (!window.Vapi) return;
+        if (!window.Vapi) {
+          console.error('window.Vapi not found in initializeVapi');
+          return;
+        }
         
-        // Public key will be used client-side
-        const vapi = new window.Vapi({ publicKey: "9563de4f-ffdd-4ac1-a005-e0c2de27f8b3" });
+        console.log('🔧 Initializing Vapi instance...');
+        
+        // Public key for client-side
+        const vapi = new window.Vapi("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
         
         // Set up event listeners
         vapi.on("call-start", () => {
@@ -131,10 +146,11 @@ export default function LiveCallDemo() {
         });
 
         vapiInstance.current = vapi;
+        console.log('✅ Vapi instance ready');
         
       } catch (error) {
         console.error('Error initializing Vapi:', error);
-        setErrorMessage("Failed to initialize Vapi");
+        setErrorMessage("Failed to initialize Vapi: " + error.message);
       }
     };
 
@@ -148,6 +164,9 @@ export default function LiveCallDemo() {
         } catch (e) {
           console.error('Cleanup error:', e);
         }
+      }
+      if (scriptElement && document.head.contains(scriptElement)) {
+        document.head.removeChild(scriptElement);
       }
     };
   }, []);
@@ -166,6 +185,7 @@ export default function LiveCallDemo() {
   const startCall = async () => {
     if (!selectedScenario || !vapiInstance.current) {
       console.log('Cannot start call - missing requirements');
+      setErrorMessage("Vapi SDK not ready. Please refresh the page.");
       return;
     }
 
@@ -185,7 +205,8 @@ export default function LiveCallDemo() {
       });
 
       if (!tokenResponse.ok) {
-        throw new Error('Failed to get client token');
+        const errorData = await tokenResponse.json();
+        throw new Error(errorData.error || 'Failed to get client token');
       }
 
       const { token } = await tokenResponse.json();
@@ -229,6 +250,17 @@ export default function LiveCallDemo() {
 
   return (
     <div className="mt-16">
+      <style>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+
       <div className="text-center mb-12">
         <h3 className="text-2xl font-bold text-[#1C1C1C] mb-4">
           Try Our AI Agent Right Now
@@ -392,17 +424,6 @@ export default function LiveCallDemo() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </div>
   );
 }
