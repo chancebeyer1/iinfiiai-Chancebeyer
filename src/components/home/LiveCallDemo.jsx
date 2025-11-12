@@ -36,30 +36,90 @@ const scenarios = [
   }
 ];
 
+const VAPI_PUBLIC_KEY = "8bffd88e-8a7b-4c94-9f0b-4c867b72af91";
+
 export default function LiveCallDemo() {
   const [selectedScenario, setSelectedScenario] = useState(1);
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
-  const [micPermission, setMicPermission] = useState(null);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [transcript, setTranscript] = useState([]);
+  const [error, setError] = useState(null);
+  
+  const vapiRef = useRef(null);
 
-  // Request microphone permission on mount
+  // Load Vapi SDK
   useEffect(() => {
-    const requestMicPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Stop the stream immediately, we just needed to trigger permission
-        stream.getTracks().forEach(track => track.stop());
-        setMicPermission('granted');
-        console.log('✅ Microphone permission granted');
-      } catch (error) {
-        console.error('❌ Microphone permission denied:', error);
-        setMicPermission('denied');
+    if (window.Vapi) {
+      setSdkLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.5/dist/index.umd.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('✅ Vapi SDK loaded successfully');
+      setSdkLoaded(true);
+    };
+    script.onerror = () => {
+      console.error('❌ Failed to load Vapi SDK');
+      setError('Failed to load voice SDK');
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
     };
-
-    requestMicPermission();
   }, []);
+
+  // Initialize Vapi instance
+  useEffect(() => {
+    if (sdkLoaded && window.Vapi && !vapiRef.current) {
+      try {
+        vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
+        
+        // Set up event listeners
+        vapiRef.current.on('call-start', () => {
+          console.log('✅ Call started');
+          setIsCallActive(true);
+          setError(null);
+        });
+
+        vapiRef.current.on('call-end', () => {
+          console.log('✅ Call ended');
+          setIsCallActive(false);
+          setCallDuration(0);
+          setTranscript([]);
+        });
+
+        vapiRef.current.on('message', (message) => {
+          console.log('📝 Message:', message);
+          if (message.type === 'transcript' && message.transcript) {
+            setTranscript(prev => [...prev, {
+              role: message.role,
+              text: message.transcript
+            }]);
+          }
+        });
+
+        vapiRef.current.on('error', (error) => {
+          console.error('❌ Vapi error:', error);
+          setError('Call error occurred');
+          setIsCallActive(false);
+        });
+
+        console.log('✅ Vapi initialized');
+      } catch (err) {
+        console.error('❌ Error initializing Vapi:', err);
+        setError('Failed to initialize voice system');
+      }
+    }
+  }, [sdkLoaded]);
 
   // Call duration timer
   useEffect(() => {
@@ -78,6 +138,32 @@ export default function LiveCallDemo() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const startCall = async () => {
+    if (!vapiRef.current || isCallActive) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const scenario = scenarios.find(s => s.id === selectedScenario);
+      console.log('🚀 Starting call with assistant:', scenario.assistantId);
+      
+      await vapiRef.current.start(scenario.assistantId);
+    } catch (err) {
+      console.error('❌ Error starting call:', err);
+      setError('Failed to start call. Please check your microphone permissions.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const endCall = () => {
+    if (vapiRef.current && isCallActive) {
+      console.log('🛑 Ending call');
+      vapiRef.current.stop();
+    }
+  };
+
   const scenario = scenarios.find(s => s.id === selectedScenario);
 
   return (
@@ -86,6 +172,10 @@ export default function LiveCallDemo() {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
         }
       `}</style>
 
@@ -97,16 +187,22 @@ export default function LiveCallDemo() {
           Select a scenario and experience how our AI handles real customer interactions
         </p>
 
-        {/* Microphone Permission Warning */}
-        {micPermission === 'denied' && (
-          <div className="max-w-md mx-auto mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        {/* Error Message */}
+        {error && (
+          <div className="max-w-md mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-left">
-              <p className="font-semibold text-amber-900 mb-1">Microphone Access Required</p>
-              <p className="text-amber-700">
-                Please allow microphone access in your browser settings to use the voice demo.
-              </p>
+              <p className="font-semibold text-red-900 mb-1">Error</p>
+              <p className="text-red-700">{error}</p>
             </div>
+          </div>
+        )}
+
+        {/* SDK Loading */}
+        {!sdkLoaded && !error && (
+          <div className="max-w-md mx-auto mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <p className="text-sm text-blue-700">Loading voice system...</p>
           </div>
         )}
 
@@ -115,7 +211,7 @@ export default function LiveCallDemo() {
           <Select
             value={selectedScenario?.toString()}
             onValueChange={(value) => setSelectedScenario(parseInt(value))}
-            disabled={isCallActive}
+            disabled={isCallActive || isLoading}
           >
             <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
               <SelectValue placeholder="Select a scenario..." />
@@ -152,14 +248,13 @@ export default function LiveCallDemo() {
                 background: 'conic-gradient(from 0deg, #00D48A, #51A7FF, #00D48A, #51A7FF, #00D48A)',
                 filter: 'blur(40px)',
                 opacity: isCallActive ? 1 : 0.7,
-                animation: isCallActive ? 'spin 8s linear infinite' : 'spin 20s linear infinite'
+                animation: isCallActive ? 'spin 8s linear infinite, pulse 2s ease-in-out infinite' : 'spin 20s linear infinite'
               }}
             />
             
             {/* Center Content */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative z-10 flex flex-col items-center">
-                {/* Call to Action */}
                 <div 
                   className="px-8 py-6 rounded-2xl text-white backdrop-blur-xl text-center"
                   onMouseEnter={() => setIsHovering(true)}
@@ -169,42 +264,94 @@ export default function LiveCallDemo() {
                     border: '2px solid rgba(0,212,138,0.4)'
                   }}
                 >
-                  <Phone className="w-12 h-12 mx-auto mb-4 text-[#00D48A]" />
-                  <h4 className="text-xl font-bold mb-2">
-                    {scenario?.title}
-                  </h4>
-                  <p className="text-sm text-gray-300 mb-6">
-                    {scenario?.description}
-                  </p>
-                  
-                  <a
-                    href={`tel:+18444664634`}
-                    className="inline-block gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl transition-all hover:scale-105"
-                  >
-                    <Phone className="w-5 h-5 mr-2 inline" />
-                    Call Now: (844) 466-4634
-                  </a>
-                  
-                  <p className="text-xs text-gray-400 mt-4">
-                    Or click to use browser calling
-                  </p>
+                  {isCallActive ? (
+                    <>
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center animate-pulse">
+                        <Volume2 className="w-8 h-8 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold mb-2">Call Active</h4>
+                      <p className="text-2xl font-mono text-[#00D48A] mb-6">
+                        {formatTime(callDuration)}
+                      </p>
+                      <Button
+                        onClick={endCall}
+                        className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-full font-semibold"
+                      >
+                        <PhoneOff className="w-5 h-5 mr-2" />
+                        End Call
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-12 h-12 mx-auto mb-4 text-[#00D48A]" />
+                      <h4 className="text-xl font-bold mb-2">
+                        {scenario?.title}
+                      </h4>
+                      <p className="text-sm text-gray-300 mb-6">
+                        {scenario?.description}
+                      </p>
+                      <Button
+                        onClick={startCall}
+                        disabled={!sdkLoaded || isLoading}
+                        className="gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            Starting...
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="w-5 h-5 mr-2" />
+                            Start Call
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Transcript */}
+        {transcript.length > 0 && (
+          <div className="mt-8 max-w-2xl mx-auto bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
+            <h4 className="font-semibold text-[#1C1C1C] mb-4 flex items-center gap-2">
+              <Mic className="w-5 h-5 text-[#00D48A]" />
+              Live Transcript
+            </h4>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {transcript.map((item, index) => (
+                <div key={index} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`px-4 py-2 rounded-lg max-w-[80%] ${
+                    item.role === 'user' 
+                      ? 'bg-gradient-to-r from-[#00D48A] to-[#51A7FF] text-white' 
+                      : 'bg-gray-100 text-[#1C1C1C]'
+                  }`}>
+                    <p className="text-xs font-semibold mb-1 opacity-70">
+                      {item.role === 'user' ? 'You' : 'AI Agent'}
+                    </p>
+                    <p className="text-sm">{item.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Info Text */}
         <div className="mt-8 text-center">
           <div className="inline-flex items-center gap-6 px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 shadow-lg">
             <div className="flex items-center gap-2">
               <Mic className="w-5 h-5 text-[#00D48A]" />
-              <span className="text-sm font-medium text-[#1C1C1C]">24/7 Available</span>
+              <span className="text-sm font-medium text-[#1C1C1C]">Browser-based calling</span>
             </div>
             <div className="w-px h-8 bg-gray-300" />
             <div className="flex items-center gap-2">
               <Volume2 className="w-5 h-5 text-[#51A7FF]" />
-              <span className="text-sm font-medium text-[#1C1C1C]">Natural Conversation</span>
+              <span className="text-sm font-medium text-[#1C1C1C]">Natural conversation</span>
             </div>
           </div>
         </div>
