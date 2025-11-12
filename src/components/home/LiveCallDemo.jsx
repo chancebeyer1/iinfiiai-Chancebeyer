@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Phone, PhoneOff, Volume2, Mic, MicOff, Loader2, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Phone, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,157 +38,57 @@ const scenarios = [
   }
 ];
 
-const VAPI_PUBLIC_KEY = "8bffd88e-8a7b-4c94-9f0b-4c867b72af91";
-
 export default function LiveCallDemo() {
   const [selectedScenario, setSelectedScenario] = useState(1);
-  const [isHovering, setIsHovering] = useState(false);
-  const [callState, setCallState] = useState('idle');
-  const [isMuted, setIsMuted] = useState(false);
-  const [transcript, setTranscript] = useState([]);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-  
-  const vapiRef = useRef(null);
 
-  // Load Vapi SDK via script tag
-  useEffect(() => {
-    const script = document.createElement('script');
-    // Use the direct Vapi Web SDK CDN
-    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.umd.js';
-    script.defer = true;
-    script.async = true;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    script.onload = () => {
-      console.log('✅ Vapi SDK script loaded');
-      
-      // Wait a bit for window.Vapi to be available
-      const checkVapi = setInterval(() => {
-        if (window.Vapi) {
-          clearInterval(checkVapi);
-          console.log('✅ window.Vapi available');
-          
-          try {
-            // Create Vapi instance with public key
-            vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
-            
-            // Setup event listeners
-            vapiRef.current.on('call-start', () => {
-              console.log('📞 Call started');
-              setCallState('active');
-              setError(null);
-              setTranscript([]);
-            });
-
-            vapiRef.current.on('call-end', () => {
-              console.log('📴 Call ended');
-              setCallState('idle');
-              setIsMuted(false);
-            });
-
-            vapiRef.current.on('speech-start', () => {
-              console.log('🎤 User started speaking');
-            });
-
-            vapiRef.current.on('speech-end', () => {
-              console.log('🎤 User stopped speaking');
-            });
-
-            vapiRef.current.on('message', (message) => {
-              console.log('💬 Message:', message);
-              
-              if (message.type === 'transcript' && message.transcript) {
-                setTranscript(prev => [...prev, {
-                  role: message.role || 'assistant',
-                  text: message.transcript,
-                  timestamp: Date.now()
-                }]);
-              }
-            });
-
-            vapiRef.current.on('error', (error) => {
-              console.error('❌ Vapi error:', error);
-              setError(error?.message || 'An error occurred');
-              setCallState('idle');
-            });
-
-            setSdkLoaded(true);
-            console.log('✅ Vapi initialized');
-          } catch (err) {
-            console.error('❌ Error initializing Vapi:', err);
-            setError('Failed to initialize voice system: ' + err.message);
-          }
-        }
-      }, 100);
-      
-      // Stop checking after 5 seconds
-      setTimeout(() => {
-        clearInterval(checkVapi);
-        if (!window.Vapi) {
-          console.error('❌ window.Vapi not available after 5s');
-          setError('Voice SDK not properly loaded');
-        }
-      }, 5000);
-    };
-    
-    script.onerror = () => {
-      console.error('❌ Failed to load Vapi SDK');
-      setError('Failed to load voice SDK');
-    };
-    
-    const existingScript = document.querySelector('script[src*="vapi-ai"]');
-    if (!existingScript) {
-      document.body.appendChild(script);
-    } else {
-      // SDK already loaded
-      if (window.Vapi) {
-        setTimeout(() => script.onload(), 100);
-      }
-    }
-
-    return () => {
-      if (vapiRef.current) {
-        try {
-          vapiRef.current.stop();
-        } catch (e) {
-          console.log('Cleanup:', e);
-        }
-      }
-    };
-  }, []);
-
-  const startCall = async () => {
-    if (!vapiRef.current || !sdkLoaded) {
-      setError('Voice system not ready');
+    // Validate phone number
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+      setError('Please enter a valid phone number (e.g., +1234567890)');
       return;
     }
 
-    try {
-      setCallState('connecting');
-      setError(null);
+    setIsSubmitting(true);
+    setError(null);
 
+    try {
       const scenario = scenarios.find(s => s.id === selectedScenario);
       
-      // Start call with assistant ID
-      await vapiRef.current.start(scenario.assistantId);
+      // Call backend function to initiate outbound call
+      const response = await fetch('/api/functions/initiateVapiCall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+          assistantId: scenario.assistantId,
+          scenarioName: scenario.title
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate call');
+      }
+
+      setIsSuccess(true);
+      setPhoneNumber("");
       
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 5000);
+
     } catch (err) {
-      console.error('❌ Error starting call:', err);
-      setError('Failed to start call. Please check microphone permissions.');
-      setCallState('idle');
-    }
-  };
-
-  const endCall = () => {
-    if (vapiRef.current) {
-      vapiRef.current.stop();
-    }
-  };
-
-  const toggleMute = () => {
-    if (vapiRef.current) {
-      vapiRef.current.setMuted(!isMuted);
-      setIsMuted(!isMuted);
+      console.error('❌ Error initiating call:', err);
+      setError('Failed to initiate call. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -217,11 +119,22 @@ export default function LiveCallDemo() {
 
       <div className="text-center mb-12">
         <h3 className="text-2xl font-bold text-[#1C1C1C] mb-4">
-          Try Our AI Agent Right Now
+          Get a Demo Call From Our AI
         </h3>
         <p className="text-[#6B7280] mb-8">
-          Select a scenario and click to start talking directly in your browser
+          Enter your phone number and we'll call you instantly to demonstrate our AI agent
         </p>
+
+        {/* Success Message */}
+        {isSuccess && (
+          <div className="max-w-md mx-auto mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-left">
+              <p className="font-semibold text-green-900 mb-1">Call Initiated!</p>
+              <p className="text-green-700">You should receive a call shortly.</p>
+            </div>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -234,228 +147,108 @@ export default function LiveCallDemo() {
           </div>
         )}
 
-        {/* SDK Loading */}
-        {!sdkLoaded && !error && (
-          <div className="max-w-md mx-auto mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-            <p className="text-sm text-blue-700">Loading voice system...</p>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
+          {/* Scenario Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="scenario" className="text-left block text-sm font-medium text-[#1C1C1C]">
+              Choose Demo Scenario
+            </Label>
+            <Select
+              value={selectedScenario?.toString()}
+              onValueChange={(value) => setSelectedScenario(parseInt(value))}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
+                <SelectValue placeholder="Select a scenario..." />
+              </SelectTrigger>
+              <SelectContent>
+                {scenarios.map((scenario) => (
+                  <SelectItem key={scenario.id} value={scenario.id.toString()} className="text-lg py-3">
+                    <div className="flex flex-col items-start">
+                      <span className="font-semibold">{scenario.title}</span>
+                      <span className="text-sm text-[#6B7280]">{scenario.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
 
-        {/* Scenario Selector */}
-        <div className="max-w-md mx-auto mb-8">
-          <Select
-            value={selectedScenario?.toString()}
-            onValueChange={(value) => setSelectedScenario(parseInt(value))}
-            disabled={callState !== 'idle'}
-          >
-            <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
-              <SelectValue placeholder="Select a scenario..." />
-            </SelectTrigger>
-            <SelectContent>
-              {scenarios.map((scenario) => (
-                <SelectItem key={scenario.id} value={scenario.id.toString()} className="text-lg py-3">
-                  <div className="flex flex-col items-start">
-                    <span className="font-semibold">{scenario.title}</span>
-                    <span className="text-sm text-[#6B7280]">{scenario.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* AI Orb Interface */}
-      <div className="relative max-w-2xl mx-auto">
-        <div 
-          className="relative aspect-square max-w-lg mx-auto rounded-full overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)'
-          }}
-        >
-          {/* Animated Orb */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div 
-              className={`relative w-80 h-80 rounded-full transition-all duration-700 ${
-                callState === 'active' ? 'scale-110' : isHovering ? 'scale-105' : 'scale-100'
-              }`}
-              style={{
-                background: 'conic-gradient(from 0deg, #00D48A, #51A7FF, #00D48A, #51A7FF, #00D48A)',
-                filter: 'blur(40px)',
-                opacity: callState === 'active' ? 1 : 0.7,
-                animation: callState === 'active' ? 'spin 8s linear infinite' : 'spin 20s linear infinite'
-              }}
+          {/* Phone Number Input */}
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-left block text-sm font-medium text-[#1C1C1C]">
+              Your Phone Number
+            </Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              disabled={isSubmitting}
+              className="h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors"
+              required
             />
-            
-            {/* Pulse rings when call is active */}
-            {callState === 'active' && (
+            <p className="text-xs text-[#6B7280] text-left">
+              Include country code (e.g., +1 for US)
+            </p>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={isSubmitting || !phoneNumber}
+            className="w-full gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl text-base h-14"
+          >
+            {isSubmitting ? (
               <>
-                <div 
-                  className="absolute w-96 h-96 rounded-full border-4 border-[#00D48A]"
-                  style={{
-                    animation: 'pulse-ring 2s ease-out infinite'
-                  }}
-                />
-                <div 
-                  className="absolute w-96 h-96 rounded-full border-4 border-[#51A7FF]"
-                  style={{
-                    animation: 'pulse-ring 2s ease-out infinite 1s'
-                  }}
-                />
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Calling...
+              </>
+            ) : (
+              <>
+                <Phone className="w-5 h-5 mr-2" />
+                Call Me Now
               </>
             )}
-            
-            {/* Center Content */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative z-10 flex flex-col items-center">
-                <div 
-                  className="px-8 py-8 rounded-2xl text-white backdrop-blur-xl text-center max-w-md"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                  style={{
-                    background: 'rgba(0,0,0,0.85)',
-                    border: '2px solid rgba(0,212,138,0.4)'
-                  }}
-                >
-                  {callState === 'idle' && (
-                    <>
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
-                        <Phone className="w-10 h-10 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold mb-2">
-                        {scenario?.title}
-                      </h4>
-                      <p className="text-sm text-gray-300 mb-6">
-                        {scenario?.description}
-                      </p>
+          </Button>
+        </form>
+      </div>
 
-                      <Button
-                        onClick={startCall}
-                        disabled={!sdkLoaded}
-                        className="w-full gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl text-base"
-                      >
-                        <Mic className="w-5 h-5 mr-2" />
-                        Start Talking
-                      </Button>
-
-                      <p className="text-xs text-gray-400 mt-4">
-                        Uses your microphone & speakers
-                      </p>
-                    </>
-                  )}
-
-                  {callState === 'connecting' && (
-                    <>
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
-                        <Loader2 className="w-10 h-10 text-white animate-spin" />
-                      </div>
-                      <h4 className="text-xl font-bold mb-2">Connecting...</h4>
-                      <p className="text-sm text-gray-300">
-                        Setting up audio connection
-                      </p>
-                    </>
-                  )}
-
-                  {callState === 'active' && (
-                    <>
-                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center relative">
-                        {isMuted ? (
-                          <MicOff className="w-10 h-10 text-white" />
-                        ) : (
-                          <>
-                            <Mic className="w-10 h-10 text-white" />
-                            {/* Animated sound waves */}
-                            <div className="absolute -right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                              <div className="w-1 h-8 bg-white rounded-full" style={{ animation: 'wave 1s ease-in-out infinite' }} />
-                              <div className="w-1 h-10 bg-white rounded-full" style={{ animation: 'wave 1s ease-in-out infinite 0.2s' }} />
-                              <div className="w-1 h-6 bg-white rounded-full" style={{ animation: 'wave 1s ease-in-out infinite 0.4s' }} />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <h4 className="text-xl font-bold mb-2 text-[#00D48A]">
-                        Call Active
-                      </h4>
-                      <p className="text-sm text-gray-300 mb-6">
-                        Start speaking...
-                      </p>
-
-                      <div className="flex gap-3">
-                        <Button
-                          onClick={toggleMute}
-                          variant="outline"
-                          className="flex-1 border-white/20 bg-white/10 text-white hover:bg-white/20"
-                        >
-                          {isMuted ? (
-                            <>
-                              <MicOff className="w-4 h-4 mr-2" />
-                              Unmute
-                            </>
-                          ) : (
-                            <>
-                              <Mic className="w-4 h-4 mr-2" />
-                              Mute
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          onClick={endCall}
-                          className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-                        >
-                          <PhoneOff className="w-4 h-4 mr-2" />
-                          End Call
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
+      {/* Info Section */}
+      <div className="max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-lg text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
+              <Phone className="w-6 h-6 text-white" />
             </div>
+            <h4 className="font-bold text-[#1C1C1C] mb-2">Instant Call</h4>
+            <p className="text-sm text-[#6B7280]">
+              Receive a call within seconds
+            </p>
           </div>
-        </div>
 
-        {/* Transcript Display */}
-        {transcript.length > 0 && (
-          <div className="mt-8 max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg p-6">
-              <h4 className="text-lg font-bold text-[#1C1C1C] mb-4 flex items-center gap-2">
-                <Volume2 className="w-5 h-5 text-[#00D48A]" />
-                Conversation
-              </h4>
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {transcript.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg ${
-                      item.role === 'user'
-                        ? 'bg-blue-50 border border-blue-200 ml-8'
-                        : 'bg-green-50 border border-green-200 mr-8'
-                    }`}
-                  >
-                    <div className="text-xs font-semibold text-gray-600 mb-1">
-                      {item.role === 'user' ? 'You' : 'AI Agent'}
-                    </div>
-                    <div className="text-sm text-gray-800">{item.text}</div>
-                  </div>
-                ))}
-              </div>
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-lg text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
             </div>
+            <h4 className="font-bold text-[#1C1C1C] mb-2">Real Interaction</h4>
+            <p className="text-sm text-[#6B7280]">
+              Talk with our AI agent
+            </p>
           </div>
-        )}
 
-        {/* Info Text */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-6 px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 shadow-lg">
-            <div className="flex items-center gap-2">
-              <Mic className="w-5 h-5 text-[#00D48A]" />
-              <span className="text-sm font-medium text-[#1C1C1C]">Browser-based</span>
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-lg text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-white" />
             </div>
-            <div className="w-px h-8 bg-gray-300" />
-            <div className="flex items-center gap-2">
-              <Volume2 className="w-5 h-5 text-[#51A7FF]" />
-              <span className="text-sm font-medium text-[#1C1C1C]">Natural Conversation</span>
-            </div>
+            <h4 className="font-bold text-[#1C1C1C] mb-2">No Cost</h4>
+            <p className="text-sm text-[#6B7280]">
+              Free demo, no commitment
+            </p>
           </div>
         </div>
       </div>
