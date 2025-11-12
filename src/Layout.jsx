@@ -15,12 +15,21 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Vapi SDK
+  // Load Vapi Web SDK
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js';
-    script.async = true;
+    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
+    script.async = false;
     script.type = 'text/javascript';
+    
+    script.onload = () => {
+      console.log('Vapi SDK loaded successfully');
+    };
+    
+    script.onerror = () => {
+      console.error('Failed to load Vapi SDK');
+    };
+    
     document.head.appendChild(script);
 
     return () => {
