@@ -1,16 +1,22 @@
-/**
- * Initiates an outbound call using Vapi
- */
-export default async function initiateVapiCall({ phoneNumber, assistantId, scenarioName }, { secrets }) {
+Deno.serve(async (req) => {
   try {
-    const VAPI_API_KEY = secrets.VAPI_PRIVATE_KEY;
+    const VAPI_API_KEY = Deno.env.get("VAPI_PRIVATE_KEY");
     
     if (!VAPI_API_KEY) {
-      throw new Error('Vapi API key not configured. Please add VAPI_PRIVATE_KEY to secrets.');
+      return Response.json(
+        { success: false, error: 'Vapi API key not configured. Please add VAPI_PRIVATE_KEY to secrets.' },
+        { status: 500 }
+      );
     }
 
+    // Parse request body
+    const { phoneNumber, assistantId, scenarioName } = await req.json();
+
     if (!phoneNumber || !assistantId) {
-      throw new Error('Phone number and assistant ID are required');
+      return Response.json(
+        { success: false, error: 'Phone number and assistant ID are required' },
+        { status: 400 }
+      );
     }
 
     console.log(`📞 Initiating call to ${phoneNumber} for ${scenarioName}`);
@@ -33,24 +39,27 @@ export default async function initiateVapiCall({ phoneNumber, assistantId, scena
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Vapi API error:', data);
-      throw new Error(data.message || 'Failed to initiate call');
+      console.error('❌ Vapi API error:', data);
+      return Response.json(
+        { success: false, error: data.message || 'Failed to initiate call' },
+        { status: response.status }
+      );
     }
 
     console.log(`✅ Call initiated successfully:`, data);
 
-    return {
+    return Response.json({
       success: true,
       callId: data.id,
       message: 'Call initiated successfully'
-    };
+    });
 
   } catch (error) {
     console.error('❌ Error initiating call:', error);
     
-    return {
-      success: false,
-      error: error.message || 'Failed to initiate call'
-    };
+    return Response.json(
+      { success: false, error: error.message || 'Failed to initiate call' },
+      { status: 500 }
+    );
   }
-}
+});
