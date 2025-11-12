@@ -44,12 +44,14 @@ export default function HeroSection() {
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => scrollToSection('#demo')}
-                className="gradient-button px-8 py-4 rounded-full text-white font-semibold text-base shadow-lg"
+              <a
+                href="https://calendly.com/billy-vasttrack/iinfii-demo-call"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gradient-button px-8 py-4 rounded-full text-white font-semibold text-base shadow-lg text-center"
               >
                 Book a Demo
-              </button>
+              </a>
               <button
                 onClick={() => scrollToSection('#how')}
                 className="px-8 py-4 rounded-full bg-white text-[#1C1C1C] font-semibold text-base border border-[#BFC2C6] hover:border-[#00D48A] transition-all"

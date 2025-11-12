@@ -27,12 +27,14 @@ export default function CTASection() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={() => scrollToSection('demo')}
-            className="gradient-button px-8 py-4 rounded-full text-white font-semibold text-base shadow-lg"
+          <a
+            href="https://calendly.com/billy-vasttrack/iinfii-demo-call"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="gradient-button px-8 py-4 rounded-full text-white font-semibold text-base shadow-lg text-center"
           >
             Get Started
-          </button>
+          </a>
           <button
             onClick={() => scrollToSection('contact')}
             className="px-8 py-4 rounded-full bg-white text-[#1C1C1C] font-semibold text-base border-2 border-[#BFC2C6] hover:border-[#00D48A] transition-all"

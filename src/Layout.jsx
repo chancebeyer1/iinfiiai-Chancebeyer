@@ -114,12 +114,14 @@ export default function Layout({ children }) {
 
             {/* CTA Button */}
             <div className="hidden md:block">
-              <button
-                onClick={() => scrollToSection('#demo')}
-                className="gradient-button px-6 py-2.5 rounded-full text-white font-semibold text-sm"
+              <a
+                href="https://calendly.com/billy-vasttrack/iinfii-demo-call"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gradient-button px-6 py-2.5 rounded-full text-white font-semibold text-sm inline-block"
               >
                 Book a Demo
-              </button>
+              </a>
             </div>
 
             {/* Mobile Menu Button */}
@@ -149,12 +151,14 @@ export default function Layout({ children }) {
                   {item.label}
                 </button>
               ))}
-              <button
-                onClick={() => scrollToSection('#demo')}
-                className="gradient-button w-full px-6 py-2.5 rounded-full text-white font-semibold text-sm"
+              <a
+                href="https://calendly.com/billy-vasttrack/iinfii-demo-call"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gradient-button w-full px-6 py-2.5 rounded-full text-white font-semibold text-sm block text-center"
               >
                 Book a Demo
-              </button>
+              </a>
             </div>
           </div>
         )}
