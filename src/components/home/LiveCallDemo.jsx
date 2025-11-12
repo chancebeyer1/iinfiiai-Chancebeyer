@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { base44 } from "@/api/base44Client";
 
 const scenarios = [
   {
@@ -62,18 +63,14 @@ export default function LiveCallDemo() {
       const scenario = scenarios.find(s => s.id === selectedScenario);
       
       // Call backend function to initiate outbound call
-      const response = await fetch('/api/functions/initiateVapiCall', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
-          assistantId: scenario.assistantId,
-          scenarioName: scenario.title
-        })
+      const result = await base44.functions.initiateVapiCall({
+        phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
+        assistantId: scenario.assistantId,
+        scenarioName: scenario.title
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to initiate call');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to initiate call');
       }
 
       setIsSuccess(true);
@@ -86,7 +83,7 @@ export default function LiveCallDemo() {
 
     } catch (err) {
       console.error('❌ Error initiating call:', err);
-      setError('Failed to initiate call. Please try again.');
+      setError(err.message || 'Failed to initiate call. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
