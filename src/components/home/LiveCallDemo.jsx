@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Phone, PhoneOff, Mic, Volume2, Loader2, AlertCircle } from "lucide-react";
+import { Phone, Volume2, AlertCircle, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -40,129 +39,103 @@ const VAPI_PUBLIC_KEY = "8bffd88e-8a7b-4c94-9f0b-4c867b72af91";
 
 export default function LiveCallDemo() {
   const [selectedScenario, setSelectedScenario] = useState(1);
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [transcript, setTranscript] = useState([]);
   const [error, setError] = useState(null);
-  
-  const vapiRef = useRef(null);
+  const vapiContainerRef = useRef(null);
+  const vapiInstanceRef = useRef(null);
 
-  // Load Vapi SDK
+  // Load and initialize Vapi SDK
   useEffect(() => {
-    if (window.Vapi) {
+    if (window.vapiSDK) {
       setSdkLoaded(true);
+      initializeVapi();
       return;
     }
 
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.5/dist/index.umd.js';
+    script.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js';
+    script.defer = true;
     script.async = true;
+    
     script.onload = () => {
       console.log('✅ Vapi SDK loaded successfully');
       setSdkLoaded(true);
+      initializeVapi();
     };
+    
     script.onerror = () => {
       console.error('❌ Failed to load Vapi SDK');
       setError('Failed to load voice SDK');
     };
+    
     document.body.appendChild(script);
 
     return () => {
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
+      if (vapiInstanceRef.current) {
+        // Cleanup Vapi instance if needed
+        vapiInstanceRef.current = null;
+      }
     };
   }, []);
 
-  // Initialize Vapi instance
-  useEffect(() => {
-    if (sdkLoaded && window.Vapi && !vapiRef.current) {
-      try {
-        vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
-        
-        // Set up event listeners
-        vapiRef.current.on('call-start', () => {
-          console.log('✅ Call started');
-          setIsCallActive(true);
-          setError(null);
-        });
+  const initializeVapi = () => {
+    if (!window.vapiSDK) return;
 
-        vapiRef.current.on('call-end', () => {
-          console.log('✅ Call ended');
-          setIsCallActive(false);
-          setCallDuration(0);
-          setTranscript([]);
-        });
-
-        vapiRef.current.on('message', (message) => {
-          console.log('📝 Message:', message);
-          if (message.type === 'transcript' && message.transcript) {
-            setTranscript(prev => [...prev, {
-              role: message.role,
-              text: message.transcript
-            }]);
-          }
-        });
-
-        vapiRef.current.on('error', (error) => {
-          console.error('❌ Vapi error:', error);
-          setError('Call error occurred');
-          setIsCallActive(false);
-        });
-
-        console.log('✅ Vapi initialized');
-      } catch (err) {
-        console.error('❌ Error initializing Vapi:', err);
-        setError('Failed to initialize voice system');
-      }
-    }
-  }, [sdkLoaded]);
-
-  // Call duration timer
-  useEffect(() => {
-    let interval;
-    if (isCallActive) {
-      interval = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isCallActive]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const startCall = async () => {
-    if (!vapiRef.current || isCallActive) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
     try {
       const scenario = scenarios.find(s => s.id === selectedScenario);
-      console.log('🚀 Starting call with assistant:', scenario.assistantId);
       
-      await vapiRef.current.start(scenario.assistantId);
+      // Custom button config with your branding
+      const buttonConfig = {
+        position: "bottom-right",
+        offset: "40px",
+        width: "60px",
+        height: "60px",
+        idle: {
+          color: `linear-gradient(90deg, #00D48A 0%, #51A7FF 100%)`,
+          type: "pill",
+          title: "Talk to our AI",
+          subtitle: "Have a question?",
+          icon: `https://cdn-icons-png.flaticon.com/512/3616/3616215.png`,
+        },
+        loading: {
+          color: `linear-gradient(90deg, #00D48A 0%, #51A7FF 100%)`,
+          type: "pill",
+          title: "Connecting...",
+          subtitle: "Please wait",
+          icon: `https://cdn-icons-png.flaticon.com/512/3616/3616215.png`,
+        },
+        active: {
+          color: `linear-gradient(90deg, #00D48A 0%, #51A7FF 100%)`,
+          type: "pill",
+          title: "Call in progress...",
+          subtitle: "End the call.",
+          icon: `https://cdn-icons-png.flaticon.com/512/3616/3616215.png`,
+        },
+      };
+
+      vapiInstanceRef.current = window.vapiSDK.run({
+        apiKey: VAPI_PUBLIC_KEY,
+        assistant: scenario.assistantId,
+        config: buttonConfig,
+      });
+
+      console.log('✅ Vapi initialized with assistant:', scenario.assistantId);
     } catch (err) {
-      console.error('❌ Error starting call:', err);
-      setError('Failed to start call. Please check your microphone permissions.');
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Error initializing Vapi:', err);
+      setError('Failed to initialize voice system');
     }
   };
 
-  const endCall = () => {
-    if (vapiRef.current && isCallActive) {
-      console.log('🛑 Ending call');
-      vapiRef.current.stop();
+  // Reinitialize when scenario changes
+  useEffect(() => {
+    if (sdkLoaded) {
+      initializeVapi();
     }
-  };
+  }, [selectedScenario, sdkLoaded]);
 
   const scenario = scenarios.find(s => s.id === selectedScenario);
 
@@ -173,9 +146,36 @@ export default function LiveCallDemo() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.05); opacity: 0.8; }
+        
+        /* Custom Vapi button styles */
+        #vapi-btn {
+          background: linear-gradient(90deg, #00D48A 0%, #51A7FF 100%) !important;
+          border: none !important;
+          box-shadow: 0 8px 24px rgba(0, 212, 138, 0.4) !important;
+          transition: all 0.3s ease !important;
+        }
+        
+        #vapi-btn:hover {
+          transform: scale(1.05) !important;
+          box-shadow: 0 12px 32px rgba(0, 212, 138, 0.5) !important;
+        }
+        
+        /* Custom panel styles */
+        .vapi-panel {
+          background: linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(26,26,26,0.95) 100%) !important;
+          backdrop-filter: blur(20px) !important;
+          border: 2px solid rgba(0, 212, 138, 0.3) !important;
+          border-radius: 24px !important;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+        }
+        
+        .vapi-panel-title {
+          color: #00D48A !important;
+          font-weight: 700 !important;
+        }
+        
+        .vapi-panel-subtitle {
+          color: rgba(255, 255, 255, 0.7) !important;
         }
       `}</style>
 
@@ -184,7 +184,7 @@ export default function LiveCallDemo() {
           Try Our AI Agent Right Now
         </h3>
         <p className="text-[#6B7280] mb-8">
-          Select a scenario and experience how our AI handles real customer interactions
+          Select a scenario and click the button in the bottom right to start talking
         </p>
 
         {/* Error Message */}
@@ -211,7 +211,6 @@ export default function LiveCallDemo() {
           <Select
             value={selectedScenario?.toString()}
             onValueChange={(value) => setSelectedScenario(parseInt(value))}
-            disabled={isCallActive || isLoading}
           >
             <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
               <SelectValue placeholder="Select a scenario..." />
@@ -242,13 +241,13 @@ export default function LiveCallDemo() {
           <div className="absolute inset-0 flex items-center justify-center">
             <div 
               className={`relative w-80 h-80 rounded-full transition-all duration-700 ${
-                isCallActive ? 'scale-110' : isHovering ? 'scale-105' : 'scale-100'
+                isHovering ? 'scale-105' : 'scale-100'
               }`}
               style={{
                 background: 'conic-gradient(from 0deg, #00D48A, #51A7FF, #00D48A, #51A7FF, #00D48A)',
                 filter: 'blur(40px)',
-                opacity: isCallActive ? 1 : 0.7,
-                animation: isCallActive ? 'spin 8s linear infinite, pulse 2s ease-in-out infinite' : 'spin 20s linear infinite'
+                opacity: 0.8,
+                animation: 'spin 15s linear infinite'
               }}
             />
             
@@ -264,89 +263,29 @@ export default function LiveCallDemo() {
                     border: '2px solid rgba(0,212,138,0.4)'
                   }}
                 >
-                  {isCallActive ? (
-                    <>
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center animate-pulse">
-                        <Volume2 className="w-8 h-8 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold mb-2">Call Active</h4>
-                      <p className="text-2xl font-mono text-[#00D48A] mb-6">
-                        {formatTime(callDuration)}
-                      </p>
-                      <Button
-                        onClick={endCall}
-                        className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-full font-semibold"
-                      >
-                        <PhoneOff className="w-5 h-5 mr-2" />
-                        End Call
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Phone className="w-12 h-12 mx-auto mb-4 text-[#00D48A]" />
-                      <h4 className="text-xl font-bold mb-2">
-                        {scenario?.title}
-                      </h4>
-                      <p className="text-sm text-gray-300 mb-6">
-                        {scenario?.description}
-                      </p>
-                      <Button
-                        onClick={startCall}
-                        disabled={!sdkLoaded || isLoading}
-                        className="gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Starting...
-                          </>
-                        ) : (
-                          <>
-                            <Phone className="w-5 h-5 mr-2" />
-                            Start Call
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
+                  <Phone className="w-12 h-12 mx-auto mb-4 text-[#00D48A]" />
+                  <h4 className="text-xl font-bold mb-2">
+                    {scenario?.title}
+                  </h4>
+                  <p className="text-sm text-gray-300 mb-4">
+                    {scenario?.description}
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#00D48A]/20 to-[#51A7FF]/20 border border-[#00D48A]/40">
+                    <div className="w-2 h-2 rounded-full bg-[#00D48A] animate-pulse" />
+                    <span className="text-sm font-semibold">Look for button ↘️</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Transcript */}
-        {transcript.length > 0 && (
-          <div className="mt-8 max-w-2xl mx-auto bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
-            <h4 className="font-semibold text-[#1C1C1C] mb-4 flex items-center gap-2">
-              <Mic className="w-5 h-5 text-[#00D48A]" />
-              Live Transcript
-            </h4>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {transcript.map((item, index) => (
-                <div key={index} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`px-4 py-2 rounded-lg max-w-[80%] ${
-                    item.role === 'user' 
-                      ? 'bg-gradient-to-r from-[#00D48A] to-[#51A7FF] text-white' 
-                      : 'bg-gray-100 text-[#1C1C1C]'
-                  }`}>
-                    <p className="text-xs font-semibold mb-1 opacity-70">
-                      {item.role === 'user' ? 'You' : 'AI Agent'}
-                    </p>
-                    <p className="text-sm">{item.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Info Text */}
         <div className="mt-8 text-center">
           <div className="inline-flex items-center gap-6 px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 shadow-lg">
             <div className="flex items-center gap-2">
-              <Mic className="w-5 h-5 text-[#00D48A]" />
-              <span className="text-sm font-medium text-[#1C1C1C]">Browser-based calling</span>
+              <Phone className="w-5 h-5 text-[#00D48A]" />
+              <span className="text-sm font-medium text-[#1C1C1C]">Click the button to call</span>
             </div>
             <div className="w-px h-8 bg-gray-300" />
             <div className="flex items-center gap-2">
@@ -356,6 +295,9 @@ export default function LiveCallDemo() {
           </div>
         </div>
       </div>
+
+      {/* Hidden container for Vapi button */}
+      <div ref={vapiContainerRef} id="vapi-container" />
     </div>
   );
 }
