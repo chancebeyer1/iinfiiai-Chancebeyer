@@ -45,18 +45,18 @@ export default function LiveCallDemo() {
   const [vapiLoaded, setVapiLoaded] = useState(false);
   const vapiInstance = useRef(null);
 
-  // Initialize Vapi with polling
+  // Initialize Vapi with longer polling
   useEffect(() => {
     let pollCount = 0;
-    const maxPolls = 20; // Try for 2 seconds
+    const maxPolls = 50; // Try for 5 seconds
     
     const checkVapi = () => {
-      console.log('Checking for Vapi...', pollCount);
+      console.log('Checking for Vapi SDK...', pollCount);
       
       if (window.Vapi) {
-        console.log('Vapi found!');
+        console.log('✅ Vapi SDK found!');
         try {
-          const vapi = new window.Vapi("85b43e2b-a309-4004-a0e6-f2f08ac32c9e");
+          const vapi = new window.Vapi("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
           vapiInstance.current = vapi;
           setVapiLoaded(true);
 
@@ -93,13 +93,13 @@ export default function LiveCallDemo() {
         if (pollCount < maxPolls) {
           setTimeout(checkVapi, 100);
         } else {
-          console.error('Vapi not found after polling');
-          console.log('Window keys containing "vapi":', Object.keys(window).filter(k => k.toLowerCase().includes('vapi')));
+          console.error('❌ Vapi SDK not found after polling');
         }
       }
     };
 
-    checkVapi();
+    // Start checking after a short delay
+    setTimeout(checkVapi, 100);
 
     return () => {
       if (vapiInstance.current) {

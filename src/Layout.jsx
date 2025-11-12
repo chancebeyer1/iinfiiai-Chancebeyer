@@ -15,38 +15,30 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Vapi SDK with button
+  // Load Vapi Web SDK for custom interface
   useEffect(() => {
     // Check if already loaded
-    if (window.vapiSDK || document.querySelector('script[src*="VapiAI/html-script-tag"]')) {
+    if (window.Vapi || document.querySelector('script[src*="@vapi-ai/web"]')) {
+      console.log('Vapi SDK already loaded');
       return;
     }
 
     const script = document.createElement('script');
-    script.innerHTML = `
-      var vapiInstance = null;
-      const assistant = "93027f68-3557-418e-92c3-5cd24833af22"; // Coffee Shop assistant
-      const apiKey = "9563de4f-ffdd-4ac1-a005-e0c2de27f8b3";
-      const buttonConfig = {};
-
-      (function (d, t) {
-        var g = document.createElement(t),
-          s = d.getElementsByTagName(t)[0];
-        g.src =
-          "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
-        g.defer = true;
-        g.async = true;
-        s.parentNode.insertBefore(g, s);
-
-        g.onload = function () {
-          vapiInstance = window.vapiSDK.run({
-            apiKey: apiKey,
-            assistant: assistant,
-            config: buttonConfig,
-          });
-        };
-      })(document, "script");
-    `;
+    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
+    script.async = true;
+    script.type = 'text/javascript';
+    
+    script.onload = () => {
+      console.log('Vapi Web SDK loaded successfully');
+      if (window.Vapi) {
+        console.log('window.Vapi is available');
+      }
+    };
+    
+    script.onerror = (error) => {
+      console.error('Failed to load Vapi Web SDK:', error);
+    };
+    
     document.head.appendChild(script);
 
     return () => {
