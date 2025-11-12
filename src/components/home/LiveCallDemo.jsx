@@ -41,162 +41,36 @@ export default function LiveCallDemo() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
-  const [vapiLoaded, setVapiLoaded] = useState(false);
-  const [status, setStatus] = useState("idle");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const vapiInstance = useRef(null);
+  const vapiButtonRef = useRef(null);
 
-  // Load Vapi Web SDK using dynamic import
+  // Mount Vapi button widget (simpler than SDK)
   useEffect(() => {
-    let mounted = true;
+    const scenario = scenarios.find(s => s.id === selectedScenario);
+    if (!scenario) return;
 
-    const loadVapi = async () => {
-      try {
-        // Check if already loaded
-        if (window.vapiSDK) {
-          console.log('✅ Vapi SDK already loaded');
-          setVapiLoaded(true);
-          initializeVapi();
-          return;
-        }
+    // Clear existing button
+    if (vapiButtonRef.current) {
+      vapiButtonRef.current.innerHTML = '';
+    }
 
-        console.log('📦 Loading Vapi SDK via dynamic import...');
-        
-        // Use dynamic import instead of script tag
-        const vapiModule = await import('https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js');
-        
-        if (mounted && vapiModule && vapiModule.default) {
-          console.log('✅ Vapi module loaded');
-          window.vapiSDK = vapiModule.default;
-          setVapiLoaded(true);
-          initializeVapi(vapiModule.default);
-        } else {
-          throw new Error('Vapi module not available');
-        }
-        
-      } catch (error) {
-        console.error('Error with dynamic import, trying script tag fallback...', error);
-        
-        // Fallback to script tag
-        try {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.5/dist/index.umd.js';
-          script.async = true;
-          script.type = 'text/javascript';
-          
-          script.onload = async () => {
-            console.log('✅ Fallback script loaded');
-            // Wait for Vapi to be available
-            let attempts = 0;
-            while (!window.Vapi && attempts < 30) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-              attempts++;
-            }
-            
-            if (mounted && window.Vapi) {
-              console.log('✅ window.Vapi available');
-              window.vapiSDK = window.Vapi;
-              setVapiLoaded(true);
-              initializeVapi(window.Vapi);
-            }
-          };
-          
-          script.onerror = () => {
-            console.error('❌ All loading methods failed');
-            if (mounted) {
-              setErrorMessage("Unable to load voice SDK. This feature may be blocked by your browser or network.");
-            }
-          };
-          
-          document.head.appendChild(script);
-        } catch (scriptError) {
-          console.error('Script fallback also failed:', scriptError);
-          if (mounted) {
-            setErrorMessage("Voice SDK unavailable. Please check your browser settings.");
-          }
-        }
-      }
-    };
+    // Create Vapi button element
+    const buttonEl = document.createElement('vapi-button');
+    buttonEl.setAttribute('public-key', '9563de4f-ffdd-4ac1-a005-e0c2de27f8b3');
+    buttonEl.setAttribute('assistant-id', scenario.assistantId);
+    buttonEl.style.display = 'none'; // Hide the default button, we'll trigger it
+    
+    if (vapiButtonRef.current) {
+      vapiButtonRef.current.appendChild(buttonEl);
+    }
 
-    const initializeVapi = (VapiClass) => {
-      try {
-        const VapiConstructor = VapiClass || window.vapiSDK || window.Vapi;
-        
-        if (!VapiConstructor) {
-          console.error('No Vapi constructor found');
-          return;
-        }
-        
-        console.log('🔧 Initializing Vapi instance...');
-        
-        // Initialize with public key
-        const vapi = new VapiConstructor("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
-        
-        // Set up event listeners
-        vapi.on("call-start", () => {
-          console.log('📞 Call started');
-          if (!mounted) return;
-          setIsCallActive(true);
-          setStatus("connected");
-          setCallDuration(0);
-          setIsLoading(false);
-        });
-
-        vapi.on("call-end", () => {
-          console.log('📞 Call ended');
-          if (!mounted) return;
-          setIsCallActive(false);
-          setStatus("idle");
-          setCallDuration(0);
-          setIsLoading(false);
-        });
-
-        vapi.on("speech-start", () => {
-          console.log("🗣️ AI speaking");
-        });
-
-        vapi.on("speech-end", () => {
-          console.log("🤐 AI stopped speaking");
-        });
-
-        vapi.on("error", (error) => {
-          console.error("❌ Vapi error:", error);
-          if (!mounted) return;
-          setErrorMessage(error.message || "Call error occurred");
-          setIsCallActive(false);
-          setStatus("error");
-          setIsLoading(false);
-        });
-
-        vapi.on("message", (message) => {
-          console.log("📨 Message:", message);
-        });
-
-        vapiInstance.current = vapi;
-        console.log('✅ Vapi instance ready');
-        
-      } catch (error) {
-        console.error('Error initializing Vapi:', error);
-        if (mounted) {
-          setErrorMessage("Initialization failed: " + error.message);
-        }
-      }
-    };
-
-    loadVapi();
-
-    return () => {
-      mounted = false;
-      if (vapiInstance.current) {
-        try {
-          vapiInstance.current.stop();
-        } catch (e) {
-          console.error('Cleanup error:', e);
-        }
-      }
-    };
-  }, []);
+    // Load Vapi widget script if not already loaded
+    if (!document.querySelector('script[src*="vapi.ai/sdk"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.vapicdn.com/vapi-button.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, [selectedScenario]);
 
   // Call duration timer
   useEffect(() => {
@@ -209,62 +83,18 @@ export default function LiveCallDemo() {
     return () => clearInterval(interval);
   }, [isCallActive]);
 
-  const startCall = async () => {
-    if (!selectedScenario || !vapiInstance.current) {
-      console.log('Cannot start call - missing requirements');
-      setErrorMessage("Voice SDK not ready. Please refresh the page.");
-      return;
-    }
-
-    const scenario = scenarios.find(s => s.id === selectedScenario);
-    setIsLoading(true);
-    setErrorMessage("");
-    setStatus("connecting");
-
-    try {
-      console.log('🔐 Fetching client token...');
-      const tokenResponse = await fetch('/api/functions/vapi-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json();
-        throw new Error(errorData.error || 'Failed to get client token');
-      }
-
-      const { token } = await tokenResponse.json();
-      console.log('✅ Got client token');
-
-      console.log('📞 Starting call with assistant:', scenario.assistantId);
-      await vapiInstance.current.start({
-        token,
-        assistantId: scenario.assistantId
-      });
-
-    } catch (error) {
-      console.error("Failed to start call:", error);
-      setErrorMessage(error.message || "Failed to start call");
-      setIsCallActive(false);
-      setStatus("error");
-      setIsLoading(false);
+  const startCall = () => {
+    const buttonEl = vapiButtonRef.current?.querySelector('vapi-button');
+    if (buttonEl) {
+      buttonEl.click();
+      setIsCallActive(true);
     }
   };
 
-  const endCall = async () => {
-    if (vapiInstance.current) {
-      try {
-        await vapiInstance.current.stop();
-      } catch (error) {
-        console.error('Error ending call:', error);
-      }
-    }
+  const endCall = () => {
+    // Vapi button handles the end call internally
     setIsCallActive(false);
-    setStatus("idle");
     setCallDuration(0);
-    setIsLoading(false);
   };
 
   const formatTime = (seconds) => {
@@ -282,6 +112,9 @@ export default function LiveCallDemo() {
         }
       `}</style>
 
+      {/* Hidden Vapi button mount point */}
+      <div ref={vapiButtonRef} style={{ display: 'none' }} />
+
       <div className="text-center mb-12">
         <h3 className="text-2xl font-bold text-[#1C1C1C] mb-4">
           Try Our AI Agent Right Now
@@ -295,7 +128,7 @@ export default function LiveCallDemo() {
           <Select
             value={selectedScenario?.toString()}
             onValueChange={(value) => setSelectedScenario(parseInt(value))}
-            disabled={isCallActive || isLoading}
+            disabled={isCallActive}
           >
             <SelectTrigger className="w-full h-14 text-lg border-2 border-gray-300 hover:border-[#00D48A] transition-colors">
               <SelectValue placeholder="Select a scenario..." />
@@ -312,20 +145,6 @@ export default function LiveCallDemo() {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Status Messages */}
-        {!vapiLoaded && !errorMessage && (
-          <div className="text-sm text-amber-600 mb-4 flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Loading voice interface...
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="text-sm text-red-600 mb-4 max-w-md mx-auto p-3 bg-red-50 rounded-lg">
-            {errorMessage}
-          </div>
-        )}
       </div>
 
       {/* AI Orb Interface */}
@@ -355,7 +174,7 @@ export default function LiveCallDemo() {
               {!isCallActive ? (
                 <Button
                   onClick={startCall}
-                  disabled={!selectedScenario || !vapiLoaded || isLoading}
+                  disabled={!selectedScenario}
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
                   className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
@@ -365,17 +184,8 @@ export default function LiveCallDemo() {
                     border: '2px solid rgba(0,212,138,0.3)'
                   }}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-6 h-6 mr-3 inline animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Phone className="w-6 h-6 mr-3 inline" />
-                      Call AI Agent
-                    </>
-                  )}
+                  <Phone className="w-6 h-6 mr-3 inline" />
+                  Call AI Agent
                 </Button>
               ) : (
                 <div className="relative z-10 flex flex-col items-center gap-6">
