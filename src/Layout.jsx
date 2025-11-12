@@ -172,9 +172,9 @@ export default function Layout({ children }) {
       {/* Footer */}
       <footer className="bg-[#1C1C1C] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             {/* Company */}
-            <div className="col-span-2 md:col-span-1">
+            <div className="col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#00D48A] to-[#51A7FF] flex items-center justify-center">
                   <svg width="20" height="20" viewBox="0 0 40 40" fill="none">
@@ -189,30 +189,64 @@ export default function Layout({ children }) {
               </p>
             </div>
 
+            {/* Product */}
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2">
+                <li>
+                  <button onClick={() => scrollToSection('#features')} className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    Features
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('#how')} className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    How it Works
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('#results')} className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    Results
+                  </button>
+                </li>
+              </ul>
+            </div>
+
             {/* Company Links */}
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2">
-                <li><a href="#about" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">About</a></li>
-                <li><a href="#careers" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">Careers</a></li>
+                <li>
+                  <a 
+                    href="https://calendly.com/billy-vasttrack/iinfii-demo-call" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors"
+                  >
+                    Book a Demo
+                  </a>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('#contact')} className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    Contact Sales
+                  </button>
+                </li>
               </ul>
             </div>
 
-            {/* Product Links */}
-            <div>
-              <h3 className="font-semibold mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li><a href="#integrations" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">Integrations</a></li>
-                <li><a href="#security" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">Security</a></li>
-              </ul>
-            </div>
-
-            {/* Contact Links */}
+            {/* Contact */}
             <div>
               <h3 className="font-semibold mb-4">Get in touch</h3>
               <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection('#contact')} className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">Contact</button></li>
-                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">LinkedIn</a></li>
+                <li>
+                  <a href="mailto:billy@vasttrack.ai" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    billy@vasttrack.ai
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:chanceb323@gmail.com" className="text-sm text-gray-400 hover:text-[#00D48A] transition-colors">
+                    chanceb323@gmail.com
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

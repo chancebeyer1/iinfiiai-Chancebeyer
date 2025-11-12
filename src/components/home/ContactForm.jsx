@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,17 +21,62 @@ export default function ContactForm() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({ name: "", email: "", company: "", message: "" });
-    }, 3000);
+    try {
+      // Save to database
+      await base44.entities.ContactSubmission.create(formData);
+
+      // Send emails to both recipients
+      const emailBody = `
+New Contact Form Submission
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 CONTACT DETAILS
+
+Name:     ${formData.name}
+Email:    ${formData.email}
+Company:  ${formData.company}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💬 MESSAGE
+
+${formData.message || 'No message provided'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This submission has been saved to the database.
+      `.trim();
+
+      // Send to both email addresses
+      await Promise.all([
+        base44.integrations.Core.SendEmail({
+          from_name: "iinfii.ai Contact Form",
+          to: "chanceb323@gmail.com",
+          subject: `New Contact: ${formData.name} from ${formData.company}`,
+          body: emailBody
+        }),
+        base44.integrations.Core.SendEmail({
+          from_name: "iinfii.ai Contact Form",
+          to: "billy@vasttrack.ai",
+          subject: `New Contact: ${formData.name} from ${formData.company}`,
+          body: emailBody
+        })
+      ]);
+
+      setIsSubmitted(true);
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setFormData({ name: "", email: "", company: "", message: "" });
+      }, 3000);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('There was an error submitting the form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {

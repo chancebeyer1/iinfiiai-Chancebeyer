@@ -42,34 +42,56 @@ export default function LiveCallDemo() {
   const [callDuration, setCallDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const vapiButtonRef = useRef(null);
+  const scriptLoadedRef = useRef(false);
 
-  // Mount Vapi button widget (simpler than SDK)
+  // Load Vapi script once
+  useEffect(() => {
+    if (scriptLoadedRef.current) return;
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdn.vapicdn.com/vapi-button.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('✅ Vapi button script loaded');
+      scriptLoadedRef.current = true;
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  // Update Vapi button when scenario changes
   useEffect(() => {
     const scenario = scenarios.find(s => s.id === selectedScenario);
-    if (!scenario) return;
+    if (!scenario || !vapiButtonRef.current) return;
 
     // Clear existing button
-    if (vapiButtonRef.current) {
-      vapiButtonRef.current.innerHTML = '';
-    }
+    vapiButtonRef.current.innerHTML = '';
 
     // Create Vapi button element
     const buttonEl = document.createElement('vapi-button');
     buttonEl.setAttribute('public-key', '9563de4f-ffdd-4ac1-a005-e0c2de27f8b3');
     buttonEl.setAttribute('assistant-id', scenario.assistantId);
-    buttonEl.style.display = 'none'; // Hide the default button, we'll trigger it
     
-    if (vapiButtonRef.current) {
-      vapiButtonRef.current.appendChild(buttonEl);
-    }
+    // Show the actual Vapi button with basic styling
+    buttonEl.style.cssText = `
+      --vapi-button-bg: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(40,40,40,0.9));
+      --vapi-button-text-color: white;
+      --vapi-button-border: 2px solid rgba(0,212,138,0.3);
+    `;
+    
+    vapiButtonRef.current.appendChild(buttonEl);
 
-    // Load Vapi widget script if not already loaded
-    if (!document.querySelector('script[src*="vapi.ai/sdk"]')) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.vapicdn.com/vapi-button.js';
-      script.async = true;
-      document.head.appendChild(script);
-    }
+    // Listen for call events from Vapi button
+    buttonEl.addEventListener('call-start', () => {
+      console.log('Call started');
+      setIsCallActive(true);
+      setCallDuration(0);
+    });
+
+    buttonEl.addEventListener('call-end', () => {
+      console.log('Call ended');
+      setIsCallActive(false);
+      setCallDuration(0);
+    });
   }, [selectedScenario]);
 
   // Call duration timer
@@ -82,20 +104,6 @@ export default function LiveCallDemo() {
     }
     return () => clearInterval(interval);
   }, [isCallActive]);
-
-  const startCall = () => {
-    const buttonEl = vapiButtonRef.current?.querySelector('vapi-button');
-    if (buttonEl) {
-      buttonEl.click();
-      setIsCallActive(true);
-    }
-  };
-
-  const endCall = () => {
-    // Vapi button handles the end call internally
-    setIsCallActive(false);
-    setCallDuration(0);
-  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -110,10 +118,20 @@ export default function LiveCallDemo() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        
+        vapi-button {
+          border-radius: 9999px !important;
+          padding: 1.5rem 2rem !important;
+          font-size: 1.125rem !important;
+          font-weight: 600 !important;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+          transition: all 0.3s !important;
+        }
+        
+        vapi-button:hover {
+          transform: scale(1.05) !important;
+        }
       `}</style>
-
-      {/* Hidden Vapi button mount point */}
-      <div ref={vapiButtonRef} style={{ display: 'none' }} />
 
       <div className="text-center mb-12">
         <h3 className="text-2xl font-bold text-[#1C1C1C] mb-4">
@@ -169,24 +187,15 @@ export default function LiveCallDemo() {
               }}
             />
             
-            {/* Center Button */}
+            {/* Center - Vapi Button */}
             <div className="absolute inset-0 flex items-center justify-center">
               {!isCallActive ? (
-                <Button
-                  onClick={startCall}
-                  disabled={!selectedScenario}
+                <div 
+                  ref={vapiButtonRef}
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
-                  className="relative z-10 px-8 py-6 rounded-full text-white font-semibold text-lg shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(40,40,40,0.9) 100%)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(0,212,138,0.3)'
-                  }}
-                >
-                  <Phone className="w-6 h-6 mr-3 inline" />
-                  Call AI Agent
-                </Button>
+                  className="relative z-10"
+                />
               ) : (
                 <div className="relative z-10 flex flex-col items-center gap-6">
                   {/* Call Status */}
@@ -224,14 +233,8 @@ export default function LiveCallDemo() {
                     ))}
                   </div>
 
-                  {/* End Call Button */}
-                  <Button
-                    onClick={endCall}
-                    className="px-8 py-4 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold shadow-2xl transition-all"
-                  >
-                    <PhoneOff className="w-5 h-5 mr-2" />
-                    End Call
-                  </Button>
+                  {/* Active Vapi button (for ending call) */}
+                  <div ref={vapiButtonRef} />
                 </div>
               )}
             </div>
