@@ -15,17 +15,43 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Vapi Widget SDK
+  // Load Vapi SDK with button
   useEffect(() => {
+    // Check if already loaded
+    if (window.vapiSDK || document.querySelector('script[src*="VapiAI/html-script-tag"]')) {
+      return;
+    }
+
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    document.body.appendChild(script);
+    script.innerHTML = `
+      var vapiInstance = null;
+      const assistant = "93027f68-3557-418e-92c3-5cd24833af22"; // Coffee Shop assistant
+      const apiKey = "9563de4f-ffdd-4ac1-a005-e0c2de27f8b3";
+      const buttonConfig = {};
+
+      (function (d, t) {
+        var g = document.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+        g.src =
+          "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+        g.defer = true;
+        g.async = true;
+        s.parentNode.insertBefore(g, s);
+
+        g.onload = function () {
+          vapiInstance = window.vapiSDK.run({
+            apiKey: apiKey,
+            assistant: assistant,
+            config: buttonConfig,
+          });
+        };
+      })(document, "script");
+    `;
+    document.head.appendChild(script);
 
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
       }
     };
   }, []);
@@ -237,11 +263,6 @@ export default function Layout({ children }) {
           </div>
         </div>
       </footer>
-
-      {/* Vapi Widget - floating button */}
-      <div dangerouslySetInnerHTML={{
-        __html: `<vapi-widget assistant-id="93027f68-3557-418e-92c3-5cd24833af22" public-key="9563de4f-ffdd-4ac1-a005-e0c2de27f8b3"></vapi-widget>`
-      }} />
     </div>
   );
 }
