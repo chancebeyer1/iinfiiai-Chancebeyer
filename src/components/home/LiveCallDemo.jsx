@@ -15,25 +15,25 @@ const scenarios = [
     id: 1,
     title: "Restaurant",
     description: "Make a dinner reservation",
-    vapiAssistantId: "YOUR_RESTAURANT_ASSISTANT_ID", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e",
   },
   {
     id: 2,
     title: "Hair Salon",
     description: "Book a haircut appointment",
-    vapiAssistantId: "YOUR_HAIR_SALON_ASSISTANT_ID", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e", // Using same assistant - create separate ones in Vapi if needed
   },
   {
     id: 3,
     title: "Photographer",
     description: "Schedule a photo session",
-    vapiAssistantId: "YOUR_PHOTOGRAPHER_ASSISTANT_ID", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e", // Using same assistant - create separate ones in Vapi if needed
   },
   {
     id: 4,
     title: "Coffee Shop",
     description: "Place a pickup order",
-    vapiAssistantId: "YOUR_COFFEE_SHOP_ASSISTANT_ID", // Replace with your Vapi Assistant ID
+    vapiAssistantId: "9a89b82b-ba64-4a8a-8a20-50a869a4852e", // Using same assistant - create separate ones in Vapi if needed
   }
 ];
 
@@ -49,7 +49,7 @@ export default function LiveCallDemo() {
   useEffect(() => {
     // Check if Vapi is loaded
     if (window.vapiSDK) {
-      const vapi = new window.vapiSDK("YOUR_VAPI_PUBLIC_KEY"); // Replace with your Vapi Public Key
+      const vapi = new window.vapiSDK("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
       vapiInstance.current = vapi;
       setVapiLoaded(true);
 
