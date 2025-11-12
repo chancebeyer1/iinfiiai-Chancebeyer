@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Vapi from '@vapi-ai/web';
 
 const scenarios = [
   {
@@ -45,55 +46,14 @@ export default function LiveCallDemo() {
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState([]);
   const [error, setError] = useState(null);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   
   const vapiRef = useRef(null);
 
-  // Load Vapi Web SDK
-  useEffect(() => {
-    if (window.Vapi) {
-      setSdkLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.0.9/dist/index.min.js';
-    script.defer = true;
-    script.async = true;
-    
-    script.onload = () => {
-      console.log('✅ Vapi SDK loaded');
-      setSdkLoaded(true);
-    };
-    
-    script.onerror = () => {
-      console.error('❌ Failed to load Vapi SDK');
-      setError('Failed to load voice SDK');
-    };
-    
-    document.body.appendChild(script);
-
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      if (vapiRef.current) {
-        try {
-          vapiRef.current.stop();
-        } catch (e) {
-          console.log('Cleanup error:', e);
-        }
-      }
-    };
-  }, []);
-
   // Initialize Vapi instance
   useEffect(() => {
-    if (!sdkLoaded || !window.Vapi) return;
-
     try {
       // Create Vapi instance
-      vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
+      vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
 
       // Event listeners
       vapiRef.current.on('call-start', () => {
@@ -138,9 +98,19 @@ export default function LiveCallDemo() {
       console.log('✅ Vapi initialized');
     } catch (err) {
       console.error('❌ Error initializing Vapi:', err);
-      setError('Failed to initialize voice system');
+      setError('Failed to initialize voice system. Make sure @vapi-ai/web is installed.');
     }
-  }, [sdkLoaded]);
+
+    return () => {
+      if (vapiRef.current) {
+        try {
+          vapiRef.current.stop();
+        } catch (e) {
+          console.log('Cleanup:', e);
+        }
+      }
+    };
+  }, []);
 
   const startCall = async () => {
     if (!vapiRef.current) {
@@ -217,14 +187,6 @@ export default function LiveCallDemo() {
               <p className="font-semibold text-red-900 mb-1">Error</p>
               <p className="text-red-700">{error}</p>
             </div>
-          </div>
-        )}
-
-        {/* SDK Loading */}
-        {!sdkLoaded && !error && (
-          <div className="max-w-md mx-auto mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-            <p className="text-sm text-blue-700">Loading voice system...</p>
           </div>
         )}
 
@@ -318,7 +280,6 @@ export default function LiveCallDemo() {
 
                       <Button
                         onClick={startCall}
-                        disabled={!sdkLoaded}
                         className="w-full gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl text-base"
                       >
                         <Mic className="w-5 h-5 mr-2" />
