@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Vapi from '@vapi-ai/web';
 
 const scenarios = [
   {
@@ -42,66 +41,100 @@ const VAPI_PUBLIC_KEY = "8bffd88e-8a7b-4c94-9f0b-4c867b72af91";
 export default function LiveCallDemo() {
   const [selectedScenario, setSelectedScenario] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
-  const [callState, setCallState] = useState('idle'); // idle, connecting, active
+  const [callState, setCallState] = useState('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState([]);
   const [error, setError] = useState(null);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
   
   const vapiRef = useRef(null);
 
-  // Initialize Vapi instance
+  // Load Vapi SDK via CDN
   useEffect(() => {
-    try {
-      // Create Vapi instance
-      vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js';
+    script.defer = true;
+    
+    script.onload = () => {
+      console.log('✅ Vapi SDK loaded');
+      setSdkLoaded(true);
+      
+      // Initialize after SDK loads
+      if (window.vapiSDK) {
+        try {
+          const vapiInstance = window.vapiSDK.run({
+            apiKey: VAPI_PUBLIC_KEY,
+            assistant: scenarios[0].assistantId,
+            config: {
+              transcriber: {
+                provider: "deepgram",
+                model: "nova-2",
+                language: "en-US",
+              },
+            },
+          });
+          
+          vapiRef.current = vapiInstance;
+          
+          // Setup event listeners
+          vapiInstance.on('call-start', () => {
+            console.log('📞 Call started');
+            setCallState('active');
+            setError(null);
+            setTranscript([]);
+          });
 
-      // Event listeners
-      vapiRef.current.on('call-start', () => {
-        console.log('📞 Call started');
-        setCallState('active');
-        setError(null);
-        setTranscript([]);
-      });
+          vapiInstance.on('call-end', () => {
+            console.log('📴 Call ended');
+            setCallState('idle');
+            setIsMuted(false);
+          });
 
-      vapiRef.current.on('call-end', () => {
-        console.log('📴 Call ended');
-        setCallState('idle');
-        setIsMuted(false);
-      });
+          vapiInstance.on('speech-start', () => {
+            console.log('🎤 User started speaking');
+          });
 
-      vapiRef.current.on('speech-start', () => {
-        console.log('🎤 User started speaking');
-      });
+          vapiInstance.on('speech-end', () => {
+            console.log('🎤 User stopped speaking');
+          });
 
-      vapiRef.current.on('speech-end', () => {
-        console.log('🎤 User stopped speaking');
-      });
+          vapiInstance.on('message', (message) => {
+            console.log('💬 Message:', message);
+            
+            if (message.type === 'transcript' && message.transcript) {
+              setTranscript(prev => [...prev, {
+                role: message.role || 'assistant',
+                text: message.transcript,
+                timestamp: Date.now()
+              }]);
+            }
+          });
 
-      vapiRef.current.on('message', (message) => {
-        console.log('💬 Message:', message);
-        
-        if (message.type === 'transcript') {
-          setTranscript(prev => [...prev, {
-            role: message.role,
-            text: message.transcript,
-            timestamp: Date.now()
-          }]);
+          vapiInstance.on('error', (error) => {
+            console.error('❌ Vapi error:', error);
+            setError(error?.message || 'An error occurred');
+            setCallState('idle');
+          });
+
+          console.log('✅ Vapi initialized with SDK');
+        } catch (err) {
+          console.error('❌ Error initializing Vapi:', err);
+          setError('Failed to initialize voice system');
         }
-      });
-
-      vapiRef.current.on('error', (error) => {
-        console.error('❌ Vapi error:', error);
-        setError(error.message || 'An error occurred');
-        setCallState('idle');
-      });
-
-      console.log('✅ Vapi initialized');
-    } catch (err) {
-      console.error('❌ Error initializing Vapi:', err);
-      setError('Failed to initialize voice system. Make sure @vapi-ai/web is installed.');
-    }
+      }
+    };
+    
+    script.onerror = () => {
+      console.error('❌ Failed to load Vapi SDK');
+      setError('Failed to load voice SDK');
+    };
+    
+    document.body.appendChild(script);
 
     return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
       if (vapiRef.current) {
         try {
           vapiRef.current.stop();
@@ -124,7 +157,9 @@ export default function LiveCallDemo() {
 
       const scenario = scenarios.find(s => s.id === selectedScenario);
       
-      await vapiRef.current.start(scenario.assistantId);
+      // Update assistant and start
+      vapiRef.current.setAssistant(scenario.assistantId);
+      await vapiRef.current.start();
       
     } catch (err) {
       console.error('❌ Error starting call:', err);
@@ -187,6 +222,14 @@ export default function LiveCallDemo() {
               <p className="font-semibold text-red-900 mb-1">Error</p>
               <p className="text-red-700">{error}</p>
             </div>
+          </div>
+        )}
+
+        {/* SDK Loading */}
+        {!sdkLoaded && !error && (
+          <div className="max-w-md mx-auto mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <p className="text-sm text-blue-700">Loading voice system...</p>
           </div>
         )}
 
@@ -280,6 +323,7 @@ export default function LiveCallDemo() {
 
                       <Button
                         onClick={startCall}
+                        disabled={!sdkLoaded}
                         className="w-full gradient-button px-8 py-4 rounded-full text-white font-semibold shadow-2xl text-base"
                       >
                         <Mic className="w-5 h-5 mr-2" />
