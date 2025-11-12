@@ -10,7 +10,10 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { phoneNumber, assistantId, scenarioName } = await req.json();
+    const body = await req.json();
+    console.log('📥 Received request body:', body);
+    
+    const { phoneNumber, assistantId, scenarioName } = body;
 
     if (!phoneNumber || !assistantId) {
       return Response.json(

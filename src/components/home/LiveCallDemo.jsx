@@ -62,12 +62,18 @@ export default function LiveCallDemo() {
     try {
       const scenario = scenarios.find(s => s.id === selectedScenario);
       
-      // Call backend function to initiate outbound call
-      const response = await base44.functions.invoke('initiateVapiCall', {
+      const payload = {
         phoneNumber: phoneNumber.replace(/[\s\-\(\)]/g, ''),
         assistantId: scenario.assistantId,
         scenarioName: scenario.title
-      });
+      };
+      
+      console.log('📤 Sending payload:', payload);
+      
+      // Call backend function to initiate outbound call
+      const response = await base44.functions.invoke('initiateVapiCall', payload);
+      
+      console.log('📥 Response:', response);
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to initiate call');
