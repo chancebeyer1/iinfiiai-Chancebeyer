@@ -47,78 +47,91 @@ export default function LiveCallDemo() {
   const [errorMessage, setErrorMessage] = useState("");
   const vapiInstance = useRef(null);
 
-  // Load Vapi Web SDK
+  // Load Vapi Web SDK using dynamic import
   useEffect(() => {
     let mounted = true;
-    let scriptElement = null;
 
     const loadVapi = async () => {
       try {
         // Check if already loaded
-        if (window.Vapi) {
+        if (window.vapiSDK) {
           console.log('✅ Vapi SDK already loaded');
           setVapiLoaded(true);
           initializeVapi();
           return;
         }
 
-        console.log('📦 Loading Vapi SDK...');
+        console.log('📦 Loading Vapi SDK via dynamic import...');
         
-        // Use unpkg CDN with specific version
-        scriptElement = document.createElement('script');
-        scriptElement.src = 'https://unpkg.com/@vapi-ai/web@2.3.5/dist/index.umd.js';
-        scriptElement.crossOrigin = 'anonymous';
+        // Use dynamic import instead of script tag
+        const vapiModule = await import('https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js');
         
-        const loadPromise = new Promise((resolve, reject) => {
-          scriptElement.onload = () => {
-            console.log('✅ Script loaded successfully');
-            resolve();
-          };
-          scriptElement.onerror = (e) => {
-            console.error('❌ Script load error:', e);
-            reject(new Error('Failed to load Vapi SDK'));
-          };
-        });
-        
-        document.head.appendChild(scriptElement);
-        await loadPromise;
-        
-        // Wait for Vapi to be available on window
-        let attempts = 0;
-        const maxAttempts = 20;
-        while (!window.Vapi && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-          console.log(`Waiting for Vapi... attempt ${attempts}`);
-        }
-        
-        if (mounted && window.Vapi) {
-          console.log('✅ window.Vapi available');
+        if (mounted && vapiModule && vapiModule.default) {
+          console.log('✅ Vapi module loaded');
+          window.vapiSDK = vapiModule.default;
           setVapiLoaded(true);
-          initializeVapi();
+          initializeVapi(vapiModule.default);
         } else {
-          throw new Error('Vapi SDK did not initialize');
+          throw new Error('Vapi module not available');
         }
         
       } catch (error) {
-        console.error('Error loading Vapi:', error);
-        if (mounted) {
-          setErrorMessage("Unable to load voice SDK. Please refresh the page.");
+        console.error('Error with dynamic import, trying script tag fallback...', error);
+        
+        // Fallback to script tag
+        try {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.5/dist/index.umd.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          
+          script.onload = async () => {
+            console.log('✅ Fallback script loaded');
+            // Wait for Vapi to be available
+            let attempts = 0;
+            while (!window.Vapi && attempts < 30) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              attempts++;
+            }
+            
+            if (mounted && window.Vapi) {
+              console.log('✅ window.Vapi available');
+              window.vapiSDK = window.Vapi;
+              setVapiLoaded(true);
+              initializeVapi(window.Vapi);
+            }
+          };
+          
+          script.onerror = () => {
+            console.error('❌ All loading methods failed');
+            if (mounted) {
+              setErrorMessage("Unable to load voice SDK. This feature may be blocked by your browser or network.");
+            }
+          };
+          
+          document.head.appendChild(script);
+        } catch (scriptError) {
+          console.error('Script fallback also failed:', scriptError);
+          if (mounted) {
+            setErrorMessage("Voice SDK unavailable. Please check your browser settings.");
+          }
         }
       }
     };
 
-    const initializeVapi = () => {
+    const initializeVapi = (VapiClass) => {
       try {
-        if (!window.Vapi) {
-          console.error('window.Vapi not found');
+        const VapiConstructor = VapiClass || window.vapiSDK || window.Vapi;
+        
+        if (!VapiConstructor) {
+          console.error('No Vapi constructor found');
           return;
         }
         
         console.log('🔧 Initializing Vapi instance...');
         
         // Initialize with public key
-        const vapi = new window.Vapi("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
+        const vapi = new VapiConstructor("9563de4f-ffdd-4ac1-a005-e0c2de27f8b3");
         
         // Set up event listeners
         vapi.on("call-start", () => {
@@ -166,7 +179,7 @@ export default function LiveCallDemo() {
       } catch (error) {
         console.error('Error initializing Vapi:', error);
         if (mounted) {
-          setErrorMessage("Failed to initialize: " + error.message);
+          setErrorMessage("Initialization failed: " + error.message);
         }
       }
     };
