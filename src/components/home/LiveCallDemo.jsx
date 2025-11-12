@@ -49,15 +49,15 @@ export default function LiveCallDemo() {
   
   const vapiRef = useRef(null);
 
-  // Load Vapi SDK
+  // Load Vapi Web SDK
   useEffect(() => {
-    if (window.vapiSDK) {
+    if (window.Vapi) {
       setSdkLoaded(true);
       return;
     }
 
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.0.9/dist/index.min.js';
     script.defer = true;
     script.async = true;
     
@@ -89,11 +89,11 @@ export default function LiveCallDemo() {
 
   // Initialize Vapi instance
   useEffect(() => {
-    if (!sdkLoaded || !window.vapiSDK) return;
+    if (!sdkLoaded || !window.Vapi) return;
 
     try {
       // Create Vapi instance
-      vapiRef.current = new window.vapiSDK.Vapi(VAPI_PUBLIC_KEY);
+      vapiRef.current = new window.Vapi(VAPI_PUBLIC_KEY);
 
       // Event listeners
       vapiRef.current.on('call-start', () => {
