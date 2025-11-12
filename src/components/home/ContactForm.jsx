@@ -32,25 +32,42 @@ export default function ContactForm() {
 
       // Send email notifications to both users
       const emailBody = `
-New Contact Form Submission
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 CONTACT DETAILS
-
-Name:     ${formData.name}
-Email:    ${formData.email}
-Company:  ${formData.company}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💬 MESSAGE
-
-${formData.message || 'No message provided'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-This submission has been saved to the database.
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <h2 style="color: #00D48A;">New Contact Form Submission</h2>
+  
+  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
+  
+  <h3 style="color: #1C1C1C;">📋 Contact Details</h3>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 8px 0; font-weight: bold; width: 120px;">Name:</td>
+      <td style="padding: 8px 0;">${formData.name}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; font-weight: bold;">Email:</td>
+      <td style="padding: 8px 0;"><a href="mailto:${formData.email}" style="color: #00D48A;">${formData.email}</a></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; font-weight: bold;">Company:</td>
+      <td style="padding: 8px 0;">${formData.company}</td>
+    </tr>
+  </table>
+  
+  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
+  
+  <h3 style="color: #1C1C1C;">💬 Message</h3>
+  <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #00D48A;">
+    <p style="margin: 0; white-space: pre-wrap;">${formData.message || 'No message provided'}</p>
+  </div>
+  
+  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
+  
+  <p style="font-size: 12px; color: #6B7280;">
+    This submission has been saved to the database.
+  </p>
+</body>
+</html>
       `.trim();
 
       await Promise.all([
