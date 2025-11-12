@@ -45,49 +45,61 @@ export default function LiveCallDemo() {
   const [vapiLoaded, setVapiLoaded] = useState(false);
   const vapiInstance = useRef(null);
 
-  // Initialize Vapi
+  // Initialize Vapi with polling
   useEffect(() => {
-    // Check if Vapi is loaded (the SDK exports as window.Vapi, not window.vapiSDK)
-    if (window.Vapi) {
-      const vapi = new window.Vapi("85b43e2b-a309-4004-a0e6-f2f08ac32c9e");
-      vapiInstance.current = vapi;
-      setVapiLoaded(true);
-
-      // Listen to call events
-      vapi.on("call-start", () => {
-        setIsCallActive(true);
-        setCallDuration(0);
-      });
-
-      vapi.on("call-end", () => {
-        setIsCallActive(false);
-        setCallDuration(0);
-      });
-
-      vapi.on("speech-start", () => {
-        console.log("AI started speaking");
-      });
-
-      vapi.on("speech-end", () => {
-        console.log("AI stopped speaking");
-      });
-
-      vapi.on("error", (error) => {
-        console.error("Vapi error:", error);
-        setIsCallActive(false);
-      });
-    } else {
-      console.warn("Vapi SDK not loaded yet, will retry...");
-      // Retry after a short delay
-      const timer = setTimeout(() => {
-        if (window.Vapi) {
+    let pollCount = 0;
+    const maxPolls = 20; // Try for 2 seconds
+    
+    const checkVapi = () => {
+      console.log('Checking for Vapi...', pollCount);
+      
+      if (window.Vapi) {
+        console.log('Vapi found!');
+        try {
           const vapi = new window.Vapi("85b43e2b-a309-4004-a0e6-f2f08ac32c9e");
           vapiInstance.current = vapi;
           setVapiLoaded(true);
+
+          // Listen to call events
+          vapi.on("call-start", () => {
+            console.log('Call started');
+            setIsCallActive(true);
+            setCallDuration(0);
+          });
+
+          vapi.on("call-end", () => {
+            console.log('Call ended');
+            setIsCallActive(false);
+            setCallDuration(0);
+          });
+
+          vapi.on("speech-start", () => {
+            console.log("AI started speaking");
+          });
+
+          vapi.on("speech-end", () => {
+            console.log("AI stopped speaking");
+          });
+
+          vapi.on("error", (error) => {
+            console.error("Vapi error:", error);
+            setIsCallActive(false);
+          });
+        } catch (error) {
+          console.error('Error initializing Vapi:', error);
         }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+      } else {
+        pollCount++;
+        if (pollCount < maxPolls) {
+          setTimeout(checkVapi, 100);
+        } else {
+          console.error('Vapi not found after polling');
+          console.log('Window keys containing "vapi":', Object.keys(window).filter(k => k.toLowerCase().includes('vapi')));
+        }
+      }
+    };
+
+    checkVapi();
 
     return () => {
       if (vapiInstance.current) {
@@ -107,12 +119,15 @@ export default function LiveCallDemo() {
   }, [isCallActive]);
 
   const startCall = async () => {
-    if (!selectedScenario || !vapiInstance.current) return;
+    if (!selectedScenario || !vapiInstance.current) {
+      console.log('Cannot start call', { selectedScenario, vapiInstance: vapiInstance.current });
+      return;
+    }
 
     const scenario = scenarios.find(s => s.id === selectedScenario);
     
     try {
-      // Start the Vapi call with the selected assistant
+      console.log('Starting call with assistant:', scenario.vapiAssistantId);
       await vapiInstance.current.start(scenario.vapiAssistantId);
     } catch (error) {
       console.error("Failed to start call:", error);

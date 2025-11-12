@@ -17,17 +17,33 @@ export default function Layout({ children }) {
 
   // Load Vapi Web SDK
   useEffect(() => {
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src*="vapi-ai"]');
+    if (existingScript) {
+      console.log('Vapi script already loaded');
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js';
-    script.async = false;
+    script.async = true;
     script.type = 'text/javascript';
     
     script.onload = () => {
-      console.log('Vapi SDK loaded successfully');
+      console.log('Vapi SDK script loaded');
+      // Check if window.Vapi exists after load
+      setTimeout(() => {
+        if (window.Vapi) {
+          console.log('window.Vapi is available');
+        } else {
+          console.error('window.Vapi not found after script load');
+          console.log('Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('vapi')));
+        }
+      }, 100);
     };
     
-    script.onerror = () => {
-      console.error('Failed to load Vapi SDK');
+    script.onerror = (error) => {
+      console.error('Failed to load Vapi SDK:', error);
     };
     
     document.head.appendChild(script);
