@@ -1,5 +1,6 @@
 import React from "react";
-import LiveCallDemo from "./LiveCallDemo";
+// import LiveCallDemo from "./LiveCallDemo"; // Hidden - using VoiceWidget instead
+import VoiceWidget from "./VoiceWidget";
 
 const steps = [
   { title: "Answer", text: "Your AI picks up instantly, verifies intent, and qualifies." },
@@ -46,8 +47,8 @@ export default function HowItWorks() {
           ))}
         </div>
 
-        {/* Live Demo */}
-        <LiveCallDemo />
+        {/* Voice Widget - In-Browser Voice Assistant */}
+        <VoiceWidget />
       </div>
     </section>
   );
