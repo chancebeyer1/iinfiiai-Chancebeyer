@@ -20,13 +20,17 @@ git push origin main
 Before deploying, make sure to add these environment variables in your Base44 dashboard:
 
 1. Go to your Base44 project dashboard
-2. Navigate to **Settings** → **Environment Variables**
-3. Add the following variables:
+2. Navigate to **Base44 Secrets** section
+3. Click **"+ Add Secret"** button
+4. Add the following secrets:
 
    - **VITE_VAPI_PUBLIC_KEY** = `your_vapi_public_key_here`
    - **VITE_VAPI_ASSISTANT_ID** = `your_assistant_id_here` (optional)
 
-**Important:** The `VITE_` prefix is required for Vite to expose these to client-side code.
+**Important:** 
+- The `VITE_` prefix is required for Vite to expose these to client-side code
+- These are stored as secrets and encrypted at rest
+- They will be injected into your application at runtime
 
 ### 3. Verify Deployment
 
