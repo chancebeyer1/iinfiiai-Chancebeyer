@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,65 +26,21 @@ export default function ContactForm() {
     try {
       console.log('📝 Submitting form data:', formData);
       
-      // Save to database
-      await base44.entities.ContactSubmission.create(formData);
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-      // Send email notifications to both users
-      const emailBody = `
-<html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <h2 style="color: #00D48A;">New Contact Form Submission</h2>
-  
-  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
-  
-  <h3 style="color: #1C1C1C;">📋 Contact Details</h3>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td style="padding: 8px 0; font-weight: bold; width: 120px;">Name:</td>
-      <td style="padding: 8px 0;">${formData.name}</td>
-    </tr>
-    <tr>
-      <td style="padding: 8px 0; font-weight: bold;">Email:</td>
-      <td style="padding: 8px 0;"><a href="mailto:${formData.email}" style="color: #00D48A;">${formData.email}</a></td>
-    </tr>
-    <tr>
-      <td style="padding: 8px 0; font-weight: bold;">Company:</td>
-      <td style="padding: 8px 0;">${formData.company}</td>
-    </tr>
-  </table>
-  
-  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
-  
-  <h3 style="color: #1C1C1C;">💬 Message</h3>
-  <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #00D48A;">
-    <p style="margin: 0; white-space: pre-wrap;">${formData.message || 'No message provided'}</p>
-  </div>
-  
-  <hr style="border: none; border-top: 2px solid #e0e0e0; margin: 20px 0;">
-  
-  <p style="font-size: 12px; color: #6B7280;">
-    This submission has been saved to the database.
-  </p>
-</body>
-</html>
-      `.trim();
+      const data = await response.json();
 
-      await Promise.all([
-        base44.integrations.Core.SendEmail({
-          from_name: "iinfii.ai Contact Form",
-          to: "chanceb323@gmail.com",
-          subject: `New Contact: ${formData.name} from ${formData.company}`,
-          body: emailBody
-        }),
-        base44.integrations.Core.SendEmail({
-          from_name: "iinfii.ai Contact Form",
-          to: "billy@vasttrack.ai",
-          subject: `New Contact: ${formData.name} from ${formData.company}`,
-          body: emailBody
-        })
-      ]);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit form. Please try again.');
+      }
 
-      console.log('✅ Form submitted successfully');
+      console.log('✅ Form submitted successfully:', data);
       setIsSubmitted(true);
       
       // Reset form after 3 seconds
