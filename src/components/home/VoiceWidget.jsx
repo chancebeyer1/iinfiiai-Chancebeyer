@@ -225,12 +225,12 @@ export default function VoiceWidget() {
   }
 
   return (
-    <div className="mt-16">
+    <div>
       <div className="text-center mb-12">
-        <h3 className="text-2xl font-bold text-[#1C1C1C] mb-4">
+        <h3 className="text-3xl md:text-4xl font-bold text-[#1C1C1C] mb-4">
           Try Our AI Voice Assistant
         </h3>
-        <p className="text-[#6B7280] mb-8">
+        <p className="text-lg text-[#6B7280] max-w-2xl mx-auto">
           Click the button below to start a real-time voice conversation with our AI agent
         </p>
       </div>
