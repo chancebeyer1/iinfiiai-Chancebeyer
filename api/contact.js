@@ -94,13 +94,13 @@ export default async function handler(req, res) {
     // Send emails to both recipients
     await Promise.all([
       resend.emails.send({
-        from: 'iinfii.ai Contact Form <noreply@yourdomain.com>', // Update with your verified domain
+        from: 'iinfii.ai Contact Form <noreply@iinfii.ai>',
         to: 'chance@contentdrip.ai',
         subject: subject,
         html: emailBody,
       }),
       resend.emails.send({
-        from: 'iinfii.ai Contact Form <noreply@yourdomain.com>', // Update with your verified domain
+        from: 'iinfii.ai Contact Form <noreply@iinfii.ai>',
         to: 'billy@vasttrack.ai',
         subject: subject,
         html: emailBody,

@@ -1,5 +1,6 @@
 import React from "react";
 import HeroSection from "../components/home/HeroSection";
+import VoiceWidget from "../components/home/VoiceWidget";
 import FeatureGrid from "../components/home/FeatureGrid";
 import HowItWorks from "../components/home/HowItWorks";
 import OutboundFeature from "../components/home/OutboundFeature";
@@ -11,6 +12,11 @@ export default function Home() {
   return (
     <div className="w-full">
       <HeroSection />
+      <section className="py-20 md:py-32 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <VoiceWidget />
+        </div>
+      </section>
       <FeatureGrid />
       <HowItWorks />
       <OutboundFeature />
